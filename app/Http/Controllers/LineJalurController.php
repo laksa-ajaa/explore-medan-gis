@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\TitikStart;
+use App\Models\LineJalur;
 use Illuminate\Http\Request;
 
-class TitikStartController extends Controller
+class LineJalurController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -34,7 +34,7 @@ class TitikStartController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(TitikStart $titikStart)
+    public function show(LineJalur $lineJalur)
     {
         //
     }
@@ -42,7 +42,7 @@ class TitikStartController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(TitikStart $titikStart)
+    public function edit(LineJalur $lineJalur)
     {
         //
     }
@@ -50,7 +50,7 @@ class TitikStartController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, TitikStart $titikStart)
+    public function update(Request $request, LineJalur $lineJalur)
     {
         //
     }
@@ -58,7 +58,7 @@ class TitikStartController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(TitikStart $titikStart)
+    public function destroy(LineJalur $lineJalur)
     {
         //
     }

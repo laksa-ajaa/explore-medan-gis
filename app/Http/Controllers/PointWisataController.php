@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\LokasiWisata;
+use App\Models\PointWisata;
 use Illuminate\Http\Request;
 
-class LokasiWisataController extends Controller
+class PointWisataController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -34,7 +34,7 @@ class LokasiWisataController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(LokasiWisata $lokasiWisata)
+    public function show(PointWisata $pointWisata)
     {
         //
     }
@@ -42,7 +42,7 @@ class LokasiWisataController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(LokasiWisata $lokasiWisata)
+    public function edit(PointWisata $pointWisata)
     {
         //
     }
@@ -50,7 +50,7 @@ class LokasiWisataController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, LokasiWisata $lokasiWisata)
+    public function update(Request $request, PointWisata $pointWisata)
     {
         //
     }
@@ -58,7 +58,7 @@ class LokasiWisataController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(LokasiWisata $lokasiWisata)
+    public function destroy(PointWisata $pointWisata)
     {
         //
     }

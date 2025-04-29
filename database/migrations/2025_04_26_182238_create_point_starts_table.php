@@ -11,12 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('lokasi_wisata', function (Blueprint $table) {
+        Schema::create('point_start', function (Blueprint $table) {
             $table->id();
             $table->string('name');
             $table->text('desc')->nullable();
-            $table->string('category');
-            $table->decimal('rating', 3, 2)->default(0);
+            $table->string('type');
             $table->geometry('geom', subtype: 'point', srid: 4326);
             $table->timestamps();
         });
@@ -27,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('lokasi_wisata');
+        Schema::dropIfExists('point_start');
     }
 };

@@ -4,9 +4,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class TitikStart extends Model
+class PointStart extends Model
 {
-    protected $table = 'titik_starts';
+    protected $table = 'point_start';
 
     protected $fillable = [
         'name',

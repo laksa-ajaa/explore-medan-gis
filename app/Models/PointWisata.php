@@ -4,9 +4,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class LokasiWisata extends Model
+class PointWisata extends Model
 {
-    protected $table = 'lokasi_wisata';
+    protected $table = 'point_wisata';
 
     protected $casts = [
         'geom' => 'geometry',

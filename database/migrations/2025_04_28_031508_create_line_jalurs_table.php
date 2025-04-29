@@ -11,12 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('titik_starts', function (Blueprint $table) {
+        Schema::create('line_jalurs', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
-            $table->text('desc')->nullable();
-            $table->string('category');
-            $table->geometry('geom', subtype: 'point', srid: 4326);
+            $table->foreignId('start_id')->constrained('point_start')->onDelete('cascade');
+            $table->foreignId('wisata_id')->constrained('point_wisata')->onDelete('cascade');
+            $table->geometry('geom', 'MultiLineString', 4326);
             $table->timestamps();
         });
     }
@@ -26,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('titik_starts');
+        Schema::dropIfExists('line_jalurs');
     }
 };
