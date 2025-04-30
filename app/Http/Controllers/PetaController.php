@@ -2,7 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\PointStart;
+use App\Models\PointWisata;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class PetaController extends Controller
 {
@@ -11,7 +14,12 @@ class PetaController extends Controller
      */
     public function index()
     {
-        return view('pages.web.peta');
+        $this->data['point_start'] = PointStart::select('id', 'name', 'desc', 'type', DB::raw('ST_AsGeoJSON(geom) as geojson'))
+            ->get();
+
+        $this->data['point_wisata'] = PointWisata::select('id', 'name', 'desc', 'category', DB::raw('ST_AsGeoJSON(geom) as geojson'))
+            ->get();
+        return view('pages.web.peta', $this->data);
     }
 
     /**

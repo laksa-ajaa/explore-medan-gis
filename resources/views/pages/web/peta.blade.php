@@ -50,21 +50,20 @@
       <div class="mb-4">
         <h2 class="text-success fs-5 fw-semibold mb-2">Pilih Lokasi Awal</h2>
         <select id="startingPoint" class="form-select mb-3">
-          <option value="">-- Pilih Lokasi Awal --</option>
-          <option value="pinang_baris">Terminal Pinang Baris</option>
-          <option value="amplas">Terminal Amplas</option>
-          <option value="pusat_kota">Pusat Kota Medan</option>
+          <option value="" disabled selected>-- Pilih Lokasi Awal --</option>
+          @foreach ($point_start as $point)
+            <option value="{{ $point->id }}">{{ $point->name }}</option>
+          @endforeach
         </select>
       </div>
 
       <div class="mb-4">
         <h2 class="text-success fs-5 fw-semibold mb-2">Pilih Lokasi Wisata</h2>
         <select id="destination" class="form-select mb-3">
-          <option value="">-- Pilih Lokasi Wisata --</option>
-          <option value="lapangan_merdeka">Lapangan Merdeka</option>
-          <option value="park_zoo">Medan Park Zoo</option>
-          <option value="kebun_binatang">Kebun Binatang Medan</option>
-          <option value="tjong_afie">Tjong A Fie Mansion</option>
+          <option value="" disabled selected>-- Pilih Lokasi Wisata --</option>
+          @foreach ($point_wisata as $point)
+            <option value="{{ $point->id }}">{{ $point->name }}</option>
+          @endforeach
         </select>
       </div>
 
@@ -118,218 +117,108 @@
 
 @push('scripts')
   <script>
-    const map = L.map('map').setView([3.5952, 98.6722], 12);
+    const pointStart = @json($point_start);
+    const pointWisata = @json($point_wisata);
+
+    const redIcon = L.icon({
+      iconUrl: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
+      iconSize: [32, 32],
+      iconAnchor: [16, 32]
+    });
+
+    const greenIcon = L.icon({
+      iconUrl: 'https://maps.google.com/mapfiles/ms/icons/green-dot.png',
+      iconSize: [32, 32],
+      iconAnchor: [16, 32]
+    });
+
+    const map = L.map('map').setView([3.5952, 98.6722], 12); // Medan
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      attribution: '© OpenStreetMap'
     }).addTo(map);
 
-    const locations = {
-      pinang_baris: {
-        name: "Terminal Pinang Baris",
-        latlng: [3.6128, 98.6480],
-        type: "start",
-        description: "Terminal bus di bagian barat kota Medan."
-      },
-      amplas: {
-        name: "Terminal Amplas",
-        latlng: [3.5601, 98.7040],
-        type: "start",
-        description: "Terminal bus utama di Medan bagian selatan."
-      },
-      pusat_kota: {
-        name: "Pusat Kota Medan",
-        latlng: [3.5952, 98.6722],
-        type: "start",
-        description: "Pusat kota Medan dengan berbagai aktivitas komersial."
-      },
-      lapangan_merdeka: {
-        name: "Lapangan Merdeka",
-        latlng: [3.5889, 98.6748],
-        type: "destination",
-        description: "Lapangan publik yang luas di pusat kota."
-      },
-      park_zoo: {
-        name: "Medan Park Zoo",
-        latlng: [3.5698, 98.6475],
-        type: "destination",
-        description: "Taman rekreasi dan kebun binatang."
-      },
-      kebun_binatang: {
-        name: "Kebun Binatang Medan",
-        latlng: [3.5798, 98.6558],
-        type: "destination",
-        description: "Kebun binatang dengan koleksi satwa."
-      },
-      tjong_afie: {
-        name: "Tjong A Fie Mansion",
-        latlng: [3.5856, 98.6789],
-        type: "destination",
-        description: "Bangunan bersejarah di Medan."
-      }
-    };
+    let startMarkers = [];
+    let wisataMarkers = [];
+    let routeLine = null;
 
-    let startMarker = null;
-    let destinationMarker = null;
-    let routeControl = null;
-    const allDestinationMarkers = {};
+    function addMarkers() {
+      pointStart.forEach(p => {
+        const geo = JSON.parse(p.geojson);
+        const marker = L.marker([geo.coordinates[1], geo.coordinates[0]], {
+            icon: redIcon
+          })
+          .bindPopup(`<b>${p.name}</b><br>${p.desc}`)
+          .addTo(map);
+        startMarkers.push({
+          id: p.id,
+          marker,
+          coords: geo.coordinates
+        });
+      });
 
-    function showAllDestinations() {
-      for (const key in allDestinationMarkers) {
-        if (allDestinationMarkers[key]) {
-          map.removeLayer(allDestinationMarkers[key]);
-        }
-      }
-
-      for (const key in locations) {
-        const location = locations[key];
-        if (location.type === "destination") {
-          const marker = L.marker(location.latlng, {
-            icon: L.divIcon({
-              className: 'custom-div-icon',
-              html: `<div style="background-color: #198754; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white;"></div>`,
-              iconSize: [16, 16],
-              iconAnchor: [8, 8]
-            }),
-            title: location.name
-          }).addTo(map);
-
-          marker.bindPopup(`<strong>${location.name}</strong><br><small>${location.description}</small>`);
-          marker.on('click', function() {
-            updateInfoPanel(location);
-          });
-
-          allDestinationMarkers[key] = marker;
-        }
-      }
+      pointWisata.forEach(p => {
+        const geo = JSON.parse(p.geojson);
+        const marker = L.marker([geo.coordinates[1], geo.coordinates[0]], {
+            icon: greenIcon
+          })
+          .bindPopup(`<b>${p.name}</b><br>${p.category}`)
+          .addTo(map);
+        wisataMarkers.push({
+          id: p.id,
+          marker,
+          coords: geo.coordinates
+        });
+      });
     }
 
-    function updateInfoPanel(location) {
-      document.getElementById('infoPanel').innerHTML = `
-        <div class="card-body">
-          <h5 class="card-title text-success fw-bold fs-6">${location.name}</h5>
-          <p class="card-text small">${location.description}</p>
-        </div>
-      `;
+    function resetMap() {
+      if (routeLine) {
+        map.removeLayer(routeLine);
+        routeLine = null;
+      }
+      document.getElementById('routeInfo').classList.add('d-none');
     }
 
-    function displayRoute() {
+    function findRoute() {
       const startId = document.getElementById('startingPoint').value;
       const destId = document.getElementById('destination').value;
 
       if (!startId || !destId) {
-        showToast("Harap pilih lokasi awal dan tujuan wisata!");
+        alert('Pilih lokasi awal dan tujuan!');
         return;
       }
 
-      document.getElementById('loading').classList.remove('d-none');
-      resetMap(false);
+      const start = startMarkers.find(m => m.id == startId);
+      const end = wisataMarkers.find(m => m.id == destId);
 
-      const startLocation = locations[startId];
-      const destLocation = locations[destId];
-
-      startMarker = L.marker(startLocation.latlng, {
-        icon: L.divIcon({
-          html: `<div style="background-color: #dc3545; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white;"></div>`,
-          iconSize: [16, 16],
-          iconAnchor: [8, 8]
-        })
-      }).addTo(map).bindPopup(`<strong>${startLocation.name}</strong><br><small>${startLocation.description}</small>`);
-
-      destinationMarker = L.marker(destLocation.latlng, {
-        icon: L.divIcon({
-          html: `<div style="background-color: #198754; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white;"></div>`,
-          iconSize: [16, 16],
-          iconAnchor: [8, 8]
-        })
-      }).addTo(map).bindPopup(`<strong>${destLocation.name}</strong><br><small>${destLocation.description}</small>`);
-
-      if (routeControl) {
-        map.removeControl(routeControl);
+      if (!start || !end) {
+        alert('Lokasi tidak ditemukan!');
+        return;
       }
 
-      routeControl = L.Routing.control({
-        waypoints: [
-          L.latLng(startLocation.latlng[0], startLocation.latlng[1]),
-          L.latLng(destLocation.latlng[0], destLocation.latlng[1])
-        ],
-        lineOptions: {
-          styles: [{
-            color: '#0d6efd',
-            opacity: 0.7,
-            weight: 5
-          }]
-        },
-        routeWhileDragging: false,
-        addWaypoints: false,
-        draggableWaypoints: false,
-        fitSelectedRoutes: true,
-        showAlternatives: false,
-        createMarker: function() {
-          return null;
-        }
+      const startLatLng = [start.coords[1], start.coords[0]];
+      const endLatLng = [end.coords[1], end.coords[0]];
+
+      resetMap();
+
+      // Gambar garis lurus (contoh tanpa routing API)
+      routeLine = L.polyline([startLatLng, endLatLng], {
+        color: 'blue'
       }).addTo(map);
+      map.fitBounds(routeLine.getBounds());
 
-      routeControl.on('routesfound', function(e) {
-        const summary = e.routes[0].summary;
-        document.getElementById('routeDistance').textContent =
-          `Jarak: ${(summary.totalDistance / 1000).toFixed(1)} km`;
-        document.getElementById('routeDuration').textContent =
-          `Waktu tempuh: ${Math.round(summary.totalTime / 60)} menit`;
-        document.getElementById('routeInfo').classList.remove('d-none');
-        document.getElementById('loading').classList.add('d-none');
-      });
-
-      updateInfoPanel(destLocation);
+      // Tampilkan info rute dasar
+      const distance = map.distance(startLatLng, endLatLng) / 1000; // km
+      document.getElementById('routeDistance').innerText = `Jarak: ${distance.toFixed(2)} km`;
+      document.getElementById('routeDuration').innerText =
+        `Perkiraan Waktu: ${(distance / 30 * 60).toFixed(0)} menit`; // asumsikan 30km/h
+      document.getElementById('routeInfo').classList.remove('d-none');
     }
 
-    function resetMap(resetDropdown = true) {
-      if (startMarker) {
-        map.removeLayer(startMarker);
-        startMarker = null;
-      }
-      if (destinationMarker) {
-        map.removeLayer(destinationMarker);
-        destinationMarker = null;
-      }
-      if (routeControl) {
-        map.removeControl(routeControl);
-        routeControl = null;
-      }
-      if (resetDropdown) {
-        document.getElementById('startingPoint').value = "";
-        document.getElementById('destination').value = "";
-        document.getElementById('routeInfo').classList.add('d-none');
-      }
-      showAllDestinations();
-    }
+    document.getElementById('findRoute').addEventListener('click', findRoute);
+    document.getElementById('resetMap').addEventListener('click', resetMap);
 
-    function showToast(message) {
-      let toastContainer = document.getElementById('toast-container');
-      if (!toastContainer) {
-        toastContainer = document.createElement('div');
-        toastContainer.id = 'toast-container';
-        toastContainer.className = 'toast-container position-fixed bottom-0 end-0 p-3';
-        document.body.appendChild(toastContainer);
-      }
-
-      const toast = document.createElement('div');
-      toast.className = 'toast align-items-center text-bg-danger border-0 show mb-2';
-      toast.setAttribute('role', 'alert');
-      toast.innerHTML = `
-        <div class="d-flex">
-          <div class="toast-body">${message}</div>
-          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-        </div>
-      `;
-
-      toastContainer.appendChild(toast);
-      setTimeout(() => toast.remove(), 3000);
-    }
-
-    document.getElementById('findRoute').addEventListener('click', displayRoute);
-    document.getElementById('resetMap').addEventListener('click', () => resetMap(true));
-
-    showAllDestinations();
+    addMarkers();
   </script>
 @endpush

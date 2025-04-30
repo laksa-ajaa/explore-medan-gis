@@ -10,7 +10,8 @@
         <h5 class="footer-heading">Navigasi</h5>
         <a href="#home" class="footer-link">Home</a>
         <a href="#fitur" class="footer-link">Fitur</a>
-        <a href="#destinasi" class="footer-link">Destinasi</a>
+        <a href="#manfaat" class="footer-link">Manfaat</a>
+        <a href="#team" class="footer-link">Team</a>
       </div>
       <div class="col-md-4 mb-4">
         <h5 class="footer-heading">Ikuti Kami</h5>

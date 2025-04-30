@@ -1,6 +1,6 @@
 :root {
     --primary: #69a25b;
-    --secondary: #23b69d;
+    --secondary: #5c944e;
     --dark: #292f36;
     --light: #f7fff7;
     --accent: #ffd166;
@@ -48,8 +48,8 @@ body {
 }
 
 .btn-primary:hover {
-    background-color: #ff5252;
-    border-color: #ff5252;
+    background-color: #57864b;
+    border-color: #57864b;
 }
 
 .btn-outline-primary {
@@ -67,6 +67,7 @@ body {
         url("/api/placeholder/1920/1080") center/cover no-repeat;
     color: white;
     padding: 8rem 0;
+    height: 85vh;
     margin-bottom: 4rem;
 }
 
@@ -199,4 +200,15 @@ footer {
 .counter-text {
     font-size: 1.2rem;
     color: var(--dark);
+}
+
+@media (max-width: 576px) {
+    .hero h1 {
+        font-weight: 800;
+        font-size: 2.5rem;
+    }
+
+    .lead {
+        font-size: 1rem;
+    }
 }
