@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('name');
             $table->text('desc')->nullable();
             $table->string('type');
+            $table->string('alamat');
             $table->geometry('geom', subtype: 'point', srid: 4326);
             $table->timestamps();
         });

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Kecamatan;
 use App\Models\PointStart;
 use App\Models\PointWisata;
 use Illuminate\Http\Request;
@@ -19,6 +20,10 @@ class PetaController extends Controller
 
         $this->data['point_wisata'] = PointWisata::select('id', 'name', 'desc', 'category', DB::raw('ST_AsGeoJSON(geom) as geojson'))
             ->get();
+        $this->data['kecamatan'] = Kecamatan::select('id', 'name', 'code', DB::raw('ST_AsGeoJSON(geom) as geojson'))
+            ->get();
+
+        $this->data['title'] = 'Peta';
         return view('pages.web.peta', $this->data);
     }
 

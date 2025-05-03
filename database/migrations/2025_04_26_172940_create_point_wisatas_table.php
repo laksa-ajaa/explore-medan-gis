@@ -17,6 +17,7 @@ return new class extends Migration
             $table->text('desc')->nullable();
             $table->string('category');
             $table->decimal('rating', 3, 2)->default(0);
+            $table->string('alamat')->nullable();
             $table->geometry('geom', subtype: 'point', srid: 4326);
             $table->timestamps();
         });

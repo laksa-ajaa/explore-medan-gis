@@ -1,6 +1,6 @@
 <!-- Navbar -->
 <nav class="navbar navbar-expand-lg navbar-light fixed-top">
-  <div class="container">
+  <div class="container-fluid px-5">
     <a class="navbar-brand" href="{{ route('home') }}">
       <span class="text-primary">Explore</span><span class="text-success">Medan</span>
     </a>
@@ -10,20 +10,21 @@
     <div class="collapse navbar-collapse" id="navbarNav">
       <ul class="navbar-nav ms-auto">
         <li class="nav-item">
-          <a class="nav-link" href="#">Home</a>
+          <a class="nav-link" href="{{ !request()->routeIs('home') ? route('home') : '#' }}">Beranda</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="#fitur">Fitur</a>
+          <a class="nav-link" href="{{ !request()->routeIs('home') ? route('home') . '#fitur' : '#fitur' }}">Fitur</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="#manfaat">Manfaat</a>
+          <a class="nav-link"
+            href="{{ !request()->routeIs('home') ? route('home') . '#manfaat' : '#manfaat' }}">Manfaat</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="#team">Team</a>
+          <a class="nav-link" href="{{ !request()->routeIs('home') ? route('home') . '#team' : '#team' }}">Team</a>
         </li>
       </ul>
       <a href="{{ request()->routeIs('home') ? route('peta') : route('home') }}" class="btn btn-primary ms-lg-3">
-        {{ request()->routeIs('home') ? 'Jelajahi Peta' : 'Kembali ke Home' }}
+        {{ request()->routeIs('home') ? 'Jelajahi Peta' : 'Kembali ke Beranda' }}
       </a>
     </div>
   </div>
