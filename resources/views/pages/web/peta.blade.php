@@ -489,6 +489,7 @@
 
   <script>
     document.addEventListener('DOMContentLoaded', function() {
+
       const script = document.createElement('script');
       script.src = 'https://cdn.jsdelivr.net/npm/leaflet-geometryutil@0.10.0/src/leaflet.geometryutil.min.js';
       script.onload = function() {
@@ -512,6 +513,7 @@
         });
       });
 
+
     });
 
     function initMap() {
@@ -520,6 +522,9 @@
       const pointWisata = @json($point_wisata);
       // console.log(pointWisata)
       const kecamatan = @json($kecamatan);
+
+      // Default tourist info
+      const defaultTouristInfo = document.getElementById('touristInfo').innerHTML;
 
       const startEl = document.querySelector('#start-select');
       const wisataEl = document.querySelector('#wisata-select');
@@ -589,29 +594,115 @@
         }
       });
 
-      // Menampilkan semua pointStart
-      pointStart.forEach(point => {
-        const geo = JSON.parse(point.geojson); // parse string GeoJSON
-        const coords = geo.coordinates; // [lng, lat]
+      let allMarkers = [];
+      let selectedStartMarker = null;
+      let selectedWisataMarker = null;
+      let selectedStartCoords = null;
+      let selectedWisataCoords = null;
 
-        const marker = L.marker([coords[1], coords[0]], {
-          icon: redIcon
-        }).addTo(map);
+      function clearAllMarkers() {
+        allMarkers.forEach(m => map.removeLayer(m));
+        allMarkers = [];
 
-        marker.bindPopup(`<b>${point.name}</b><br>${point.desc}`);
-      });
+        if (selectedStartMarker) map.removeLayer(selectedStartMarker);
+        if (selectedWisataMarker) map.removeLayer(selectedWisataMarker);
+        selectedStartMarker = null;
+        selectedWisataMarker = null;
+      }
 
-      // Menampilkan semua pointWisata
-      pointWisata.forEach(point => {
-        const geo = JSON.parse(point.geojson);
-        const coords = geo.coordinates;
+      function showAllMarkers() {
+        clearAllMarkers();
 
-        const marker = L.marker([coords[1], coords[0]], {
-          icon: greenIcon
-        }).addTo(map);
+        pointStart.forEach(point => {
+          const geo = JSON.parse(point.geojson);
+          const coords = geo.coordinates;
 
-        marker.bindPopup(`<b>${point.name}</b><br>${point.desc}`);
-      });
+          const marker = L.marker([coords[1], coords[0]], {
+              icon: redIcon
+            })
+            .bindPopup(`<b>${point.name}</b><br>${point.desc}`)
+            .addTo(map);
+
+          allMarkers.push(marker);
+          document.getElementById('touristInfo').innerHTML = defaultTouristInfo;
+          startEl.reset();
+          wisataEl.reset();
+
+        });
+
+        pointWisata.forEach(point => {
+          const geo = JSON.parse(point.geojson);
+          const coords = geo.coordinates;
+
+          const marker = L.marker([coords[1], coords[0]], {
+              icon: greenIcon
+            })
+            .bindPopup(`<b>${point.name}</b><br>${point.desc}`)
+            .addTo(map);
+
+          allMarkers.push(marker);
+        });
+
+        map.setView([3.5952, 98.6722], 12); // view awal
+      }
+
+      function clearAllMarkers() {
+        allMarkers.forEach(m => map.removeLayer(m));
+        allMarkers = [];
+
+        if (selectedStartMarker) map.removeLayer(selectedStartMarker);
+        if (selectedWisataMarker) map.removeLayer(selectedWisataMarker);
+        selectedStartMarker = null;
+        selectedWisataMarker = null;
+      }
+
+      function showSelectedRoute() {
+        clearAllMarkers();
+
+        const startId = startEl.virtualSelect.getValue();
+        const wisataId = wisataEl.virtualSelect.getValue();
+
+        const start = pointStart.find(p => p.id == startId);
+        const wisata = pointWisata.find(p => p.id == wisataId);
+
+        if (!start || !wisata) {
+          alert("Silakan pilih titik awal dan lokasi wisata.");
+          return;
+        }
+
+        const startCoords = JSON.parse(start.geojson).coordinates;
+        const wisataCoords = JSON.parse(wisata.geojson).coordinates;
+
+        selectedStartCoords = [startCoords[1], startCoords[0]];
+        selectedWisataCoords = [wisataCoords[1], wisataCoords[0]];
+
+        selectedStartMarker = L.marker(selectedStartCoords, {
+            icon: redIcon
+          })
+          .bindPopup(`<b>${start.name}</b><br>${start.desc}`)
+          .addTo(map);
+
+        selectedWisataMarker = L.marker(selectedWisataCoords, {
+            icon: greenIcon
+          })
+          .bindPopup(`<b>${wisata.name}</b><br>${wisata.desc}`)
+          .addTo(map);
+
+        const bounds = L.latLngBounds([selectedStartCoords, selectedWisataCoords]);
+        map.fitBounds(bounds, {
+          padding: [70, 70]
+        });
+
+        document.getElementById('touristInfo').innerHTML = `
+          <h6 class="fw-bold mb-1 text-success">${wisata.name}</h6>
+          <p class="mb-0 small">${wisata.desc}</p>
+        `;
+      }
+
+      document.getElementById('findRoute').addEventListener('click', showSelectedRoute);
+      document.getElementById('resetMap').addEventListener('click', showAllMarkers);
+
+      showAllMarkers();
 
       // Fullscreen toggle
       let isFullscreen = false;
