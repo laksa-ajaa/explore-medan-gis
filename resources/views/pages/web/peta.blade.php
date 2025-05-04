@@ -320,12 +320,12 @@
           <div class="section-content rounded-3">
             <div class="mb-3">
               <label for="startingPoint" class="form-label small fw-semibold text-secondary">Lokasi Awal</label>
-              <div id="start-select" placeholder="-- Pilih Lokasi Awal --"></div>
+              <div id="start-select" placeholder="Pilih Titik Awal"></div>
             </div>
 
             <div class="mb-3">
               <label for="destination" class="form-label small fw-semibold text-secondary">Lokasi Wisata</label>
-              <div id="wisata-select" placeholder="-- Pilih Lokasi Wisata --"></div>
+              <div id="wisata-select" placeholder="Pilih Lokasi Wisata"></div>
             </div>
 
             <div class="d-grid gap-2">
@@ -503,24 +503,18 @@
       navButtons.forEach(button => {
         button.addEventListener('click', function() {
           navButtons.forEach(btn => btn.classList.remove('active'));
-
           this.classList.add('active');
 
           contentSections.forEach(section => section.classList.remove('active'));
-
           const targetSection = document.getElementById(this.dataset.target);
           targetSection.classList.add('active');
         });
       });
-
-
     });
 
     function initMap() {
       const pointStart = @json($point_start);
-      // console.log(pointStart)
       const pointWisata = @json($point_wisata);
-      // console.log(pointWisata)
       const kecamatan = @json($kecamatan);
 
       // Default tourist info
@@ -572,6 +566,13 @@
           attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
         });
 
+      // Layer groups
+      const startPointsLayer = L.layerGroup().addTo(map);
+      const wisataPointsLayer = L.layerGroup().addTo(map);
+      const routeLayer = L.layerGroup().addTo(map);
+      let kecamatanLayer;
+
+      // Layer control event listeners
       document.getElementById('layerOSM').addEventListener('change', function() {
         if (this.checked) {
           map.removeLayer(satelliteLayer);
@@ -594,25 +595,17 @@
         }
       });
 
-      let allMarkers = [];
-      let selectedStartMarker = null;
-      let selectedWisataMarker = null;
-      let selectedStartCoords = null;
-      let selectedWisataCoords = null;
-
-      function clearAllMarkers() {
-        allMarkers.forEach(m => map.removeLayer(m));
-        allMarkers = [];
-
-        if (selectedStartMarker) map.removeLayer(selectedStartMarker);
-        if (selectedWisataMarker) map.removeLayer(selectedWisataMarker);
-        selectedStartMarker = null;
-        selectedWisataMarker = null;
+      // Clear all layers function
+      function clearAllLayers() {
+        wisataPointsLayer.clearLayers();
+        routeLayer.clearLayers();
       }
 
+      // Show all markers function
       function showAllMarkers() {
-        clearAllMarkers();
+        clearAllLayers();
 
+        // Add start points to layer
         pointStart.forEach(point => {
           const geo = JSON.parse(point.geojson);
           const coords = geo.coordinates;
@@ -621,15 +614,19 @@
               icon: redIcon
             })
             .bindPopup(`<b>${point.name}</b><br>${point.desc}`)
-            .addTo(map);
+            .on('click', function() {
+              startEl.setValue(point.id);
 
-          allMarkers.push(marker);
-          document.getElementById('touristInfo').innerHTML = defaultTouristInfo;
-          startEl.reset();
-          wisataEl.reset();
 
+              if (wisataEl.virtualSelect.getValue()) {
+                showSelectedRoute();
+              }
+            });;
+
+          startPointsLayer.addLayer(marker);
         });
 
+        // Add wisata points to layer
         pointWisata.forEach(point => {
           const geo = JSON.parse(point.geojson);
           const coords = geo.coordinates;
@@ -638,26 +635,33 @@
               icon: greenIcon
             })
             .bindPopup(`<b>${point.name}</b><br>${point.desc}`)
-            .addTo(map);
+            .on('click', function() {
+              wisataEl.setValue(point.id);
 
-          allMarkers.push(marker);
+              if (startEl.virtualSelect.getValue()) {
+                showSelectedRoute();
+              } else {
+                document.getElementById('touristInfo').innerHTML = `
+            <h6 class="fw-bold mb-1 text-success">${point.name}</h6>
+            <p class="mb-0 small">${point.desc}</p>
+          `;
+              }
+            });;
+
+          wisataPointsLayer.addLayer(marker);
         });
 
-        map.setView([3.5952, 98.6722], 12); // view awal
+        // Reset the view and form elements
+        map.setView([3.5952, 98.6722], 12);
+        document.getElementById('touristInfo').innerHTML = defaultTouristInfo;
+        startEl.virtualSelect.reset();
+        wisataEl.virtualSelect.reset();
       }
 
-      function clearAllMarkers() {
-        allMarkers.forEach(m => map.removeLayer(m));
-        allMarkers = [];
-
-        if (selectedStartMarker) map.removeLayer(selectedStartMarker);
-        if (selectedWisataMarker) map.removeLayer(selectedWisataMarker);
-        selectedStartMarker = null;
-        selectedWisataMarker = null;
-      }
-
+      // Show selected route function
       function showSelectedRoute() {
-        clearAllMarkers();
+        clearAllLayers();
+        startPointsLayer.clearLayers();
 
         const startId = startEl.virtualSelect.getValue();
         const wisataId = wisataEl.virtualSelect.getValue();
@@ -673,36 +677,140 @@
         const startCoords = JSON.parse(start.geojson).coordinates;
         const wisataCoords = JSON.parse(wisata.geojson).coordinates;
 
-        selectedStartCoords = [startCoords[1], startCoords[0]];
-        selectedWisataCoords = [wisataCoords[1], wisataCoords[0]];
+        const selectedStartCoords = [startCoords[1], startCoords[0]];
+        const selectedWisataCoords = [wisataCoords[1], wisataCoords[0]];
 
-        selectedStartMarker = L.marker(selectedStartCoords, {
+        // Add markers to route layer
+        const startMarker = L.marker(selectedStartCoords, {
             icon: redIcon
           })
-          .bindPopup(`<b>${start.name}</b><br>${start.desc}`)
-          .addTo(map);
+          .bindPopup(`<b>${start.name}</b><br>${start.desc}`);
 
-        selectedWisataMarker = L.marker(selectedWisataCoords, {
+        const wisataMarker = L.marker(selectedWisataCoords, {
             icon: greenIcon
           })
-          .bindPopup(`<b>${wisata.name}</b><br>${wisata.desc}`)
-          .addTo(map);
+          .bindPopup(`<b>${wisata.name}</b><br>${wisata.desc}`);
 
+        routeLayer.addLayer(startMarker);
+        routeLayer.addLayer(wisataMarker);
+
+        // Fit bounds to show both markers
         const bounds = L.latLngBounds([selectedStartCoords, selectedWisataCoords]);
         map.fitBounds(bounds, {
           padding: [70, 70]
         });
 
         document.getElementById('touristInfo').innerHTML = `
-          <h6 class="fw-bold mb-1 text-success">${wisata.name}</h6>
-          <p class="mb-0 small">${wisata.desc}</p>
-        `;
+      <h6 class="fw-bold mb-1 text-success">${wisata.name}</h6>
+      <p class="mb-0 small">${wisata.desc}</p>
+    `;
       }
 
+      // Show wisata by category function
+      function showWisataByCategory(category) {
+        clearAllLayers();
+        startPointsLayer.clearLayers();
+        startEl.reset();
+        wisataEl.reset();
+
+        pointStart.forEach(point => {
+          const geo = JSON.parse(point.geojson);
+          const coords = geo.coordinates;
+
+          const marker = L.marker([coords[1], coords[0]], {
+              icon: redIcon
+            })
+            .bindPopup(`<b>${point.name}</b><br>${point.desc}`)
+            .on('click', function() {
+              startEl.setValue(point.id);
+
+              if (wisataEl.virtualSelect.getValue()) {
+                showSelectedRoute();
+              }
+            });
+
+          startPointsLayer.addLayer(marker);
+        });
+
+        // Filter wisata points by category or show all
+        const filtered = category === 'all' ?
+          pointWisata :
+          pointWisata.filter(w => `wisata-${w.category}` === category);
+
+        const markerCoords = [];
+
+        // Add filtered wisata points to layer
+        filtered.forEach(point => {
+          const geo = JSON.parse(point.geojson);
+          const coords = geo.coordinates;
+
+          const latLng = [coords[1], coords[0]];
+
+          markerCoords.push(latLng);
+
+          const marker = L.marker(latLng, {
+              icon: greenIcon
+            }).bindPopup(`<b>${point.name}</b><br>${point.desc}`)
+            .on('click', function() {
+              wisataEl.setValue(point.id);
+
+              if (startEl.virtualSelect.getValue()) {
+                showSelectedRoute();
+              } else {
+                document.getElementById('touristInfo').innerHTML = `
+            <h6 class="fw-bold mb-1 text-success">${point.name}</h6>
+            <p class="mb-0 small">${point.desc}</p>
+          `;
+              }
+            });;
+
+          wisataPointsLayer.addLayer(marker);
+        });
+
+        if (markerCoords.length > 0) {
+          const bounds = L.latLngBounds(markerCoords);
+          map.fitBounds(bounds, {
+            padding: [50, 50],
+            maxZoom: 15
+          });
+        }
+
+        const wisataSelectContainer = document.querySelector('#wisata-select');
+        wisataSelectContainer.innerHTML = '';
+
+        if (wisataEl.virtualSelect && typeof wisataEl.virtualSelect.destroy === 'function') {
+          wisataEl.virtualSelect.destroy();
+        }
+
+        VirtualSelect.init({
+          ele: wisataSelectContainer,
+          multiple: false,
+          options: filtered.map(point => ({
+            label: point.name,
+            value: point.id
+          })),
+          search: true,
+        });
+
+        wisataEl.virtualSelect = document.querySelector('#wisata-select').virtualSelect;
+      }
+
+      // Event listeners
       document.getElementById('findRoute').addEventListener('click', showSelectedRoute);
       document.getElementById('resetMap').addEventListener('click', showAllMarkers);
 
-      showAllMarkers();
+      // Category filter event listeners
+      document.querySelectorAll('#categoryFilters .filter-badge').forEach(btn => {
+        btn.addEventListener('click', function() {
+          // Toggle active class
+          document.querySelectorAll('#categoryFilters .filter-badge').forEach(el =>
+            el.classList.remove('active'));
+          this.classList.add('active');
+
+          const selectedCategory = this.getAttribute('data-category');
+          showWisataByCategory(selectedCategory);
+        });
+      });
 
       // Fullscreen toggle
       let isFullscreen = false;
@@ -743,6 +851,9 @@
           map.invalidateSize();
         }, 100);
       });
+
+      // Initialize the map with all markers
+      showAllMarkers();
     }
   </script>
 @endpush
