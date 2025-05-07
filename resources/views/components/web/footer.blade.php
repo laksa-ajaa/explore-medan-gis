@@ -4,7 +4,7 @@
     <div class="row">
       <div class="col-md-4 mb-4">
         <h5 class="footer-heading">Tentang Kami</h5>
-        <p>MedanTour GIS adalah platform informasi wisata berbasis peta interaktif untuk kota Medan.</p>
+        <p>ExploreMedan adalah platform informasi wisata berbasis peta interaktif untuk kota Medan.</p>
       </div>
       <div class="col-md-4 mb-4">
         <h5 class="footer-heading">Navigasi</h5>
@@ -21,7 +21,7 @@
       </div>
     </div>
     <div class="text-center mt-4">
-      <small>&copy; 2025 MedanTour GIS. All rights reserved.</small>
+      <small>&copy; 2025 ExploreMedan. All rights reserved.</small>
     </div>
   </div>
 </footer>

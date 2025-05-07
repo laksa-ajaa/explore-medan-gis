@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Kecamatan;
+use App\Models\LineJalur;
 use App\Models\PointStart;
 use App\Models\PointWisata;
 use Illuminate\Http\Request;
@@ -27,51 +28,19 @@ class PetaController extends Controller
         return view('pages.web.peta', $this->data);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
+    public function getJalurByStartAndWisata($start_id, $wisata_id)
     {
-        //
-    }
+        $jalur = LineJalur::select('id', 'start_id', 'wisata_id', DB::raw('ST_AsGeoJSON(geom) as geom'))
+            ->where('start_id', $start_id)
+            ->where('wisata_id', $wisata_id)
+            ->first();
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        //
-    }
+        if (!$jalur) {
+            return response()->json(['message' => 'Jalur tidak ditemukan'], 404);
+        }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+        return response()->json([
+            'geom' => json_decode($jalur->geom)
+        ]);
     }
 }

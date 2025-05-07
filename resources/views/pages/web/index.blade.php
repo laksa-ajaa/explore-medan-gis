@@ -22,22 +22,16 @@
   </section>
 
   <!-- Counter Section -->
-  <section class="pt-5" id="info">
+  <section id="info">
     <div class="container">
       <div class="row g-4">
-        <div class="col-md-4">
+        <div class="col-md-6">
           <div class="counter-box">
-            <div class="counter-number">50+</div>
+            <div class="counter-number">30+</div>
             <div class="counter-text">Destinasi Wisata</div>
           </div>
         </div>
-        <div class="col-md-4">
-          <div class="counter-box">
-            <div class="counter-number">15+</div>
-            <div class="counter-text">Rute Terbaik</div>
-          </div>
-        </div>
-        <div class="col-md-4">
+        <div class="col-md-6">
           <div class="counter-box">
             <div class="counter-number">24/7</div>
             <div class="counter-text">Dukungan Online</div>
@@ -130,7 +124,7 @@
         </div>
         <div class="col-lg-6">
           <div class="map-container">
-            <img src="/api/placeholder/800/600" alt="Peta GIS Wisata Medan" class="img-fluid">
+            <img src="{{ asset('/assets/img/preview-peta.png') }}" alt="Peta GIS Wisata Medan" class="img-fluid">
           </div>
         </div>
       </div>
@@ -219,7 +213,8 @@
                         class="fab fa-instagram"></i></a>
                   @endif
                   @if (!empty($team->github))
-                    <a href="{{ $team->github }}" class="text-muted" target="_blank"><i class="fab fa-github"></i></a>
+                    <a href="{{ $team->github }}" class="text-muted" target="_blank"><i
+                        class="fab fa-github"></i></a>
                   @endif
                 </div>
               </div>

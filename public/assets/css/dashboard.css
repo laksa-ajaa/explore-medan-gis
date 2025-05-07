@@ -64,10 +64,10 @@ body {
 
 .hero {
     background: linear-gradient(rgba(41, 47, 54, 0.7), rgba(41, 47, 54, 0.7)),
-        url("/api/placeholder/1920/1080") center/cover no-repeat;
+        url("/assets/img/hero-2.jpg") center/cover no-repeat;
     color: white;
     padding: 8rem 0;
-    height: 85vh;
+    height: 90vh;
     margin-bottom: 4rem;
 }
 

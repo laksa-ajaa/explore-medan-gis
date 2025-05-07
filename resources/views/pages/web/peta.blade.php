@@ -7,6 +7,18 @@
   <script src="https://cdn.jsdelivr.net/npm/virtual-select-plugin@1.0.46/dist/virtual-select.min.js"
     integrity="sha256-vvp5tsZt6dxBdWuGfMnKqHOplFUmacnAc3qtNAZ1HkM=" crossorigin="anonymous"></script>
 
+  <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="anonymous"></script>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="anonymous">
+
+  <script src="https://cdn.jsdelivr.net/npm/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.min.js"
+    integrity="sha256-OqfsQXAGfyz0njzJEepuBcQwxXRnv2I3RW70XkpsIbk=" crossorigin="anonymous"></script>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css"
+    integrity="sha256-cu3EeyAbdh7FZ58X4+oQz2g30Tw/U+3Utqmr1ETODqQ=" crossorigin="anonymous">
+
   <style>
     #map {
       height: 90vh;
@@ -317,17 +329,51 @@
             <h2 class="fs-5 fw-semibold m-0">Perencanaan Rute</h2>
           </div>
 
-          <div class="section-content rounded-3">
+          <div class="section-content rounded-3 p-3">
+            <!-- Custom Location Selection -->
             <div class="mb-3">
-              <label for="startingPoint" class="form-label small fw-semibold text-secondary">Lokasi Awal</label>
-              <div id="start-select" placeholder="Pilih Titik Awal"></div>
+              <div class="fw-semibold text-secondary mb-2 small">Mode Pilih Lokasi:</div>
+              <div class="btn-group w-100 mb-3" role="group">
+                <input type="radio" class="btn-check" name="locationMode" id="locationModeDropdown" checked>
+                <label class="btn btn-outline-success btn-sm" for="locationModeDropdown">Pilih dari Daftar</label>
+
+                <input type="radio" class="btn-check" name="locationMode" id="locationModeMap">
+                <label class="btn btn-outline-success btn-sm" for="locationModeMap">Klik pada Peta</label>
+              </div>
             </div>
 
+            <!-- Start Point Selection -->
+            <!-- Dropdown mode: VirtualSelect for start -->
+            <div id="dropdownSelectMode" class="location-mode">
+              <div class="mb-3">
+                <label for="startingPoint" class="form-label small fw-semibold text-secondary">Lokasi Awal</label>
+                <div id="start-select" placeholder="Pilih Titik Awal"></div>
+              </div>
+            </div>
+
+            <!-- Map-click mode: manual lat/lng for start -->
+            <div id="mapClickMode" class="location-mode d-none">
+              <div class="mb-3">
+                <label class="form-label small fw-semibold text-secondary">Lokasi Awal</label>
+                <div class="input-group input-group-sm mb-2">
+                  <span class="input-group-text">Lat</span>
+                  <input type="text" class="form-control" id="startLat" readonly>
+                  <span class="input-group-text">Lng</span>
+                  <input type="text" class="form-control" id="startLng" readonly>
+                </div>
+                <button id="setStartPoint" class="btn btn-outline-primary btn-sm w-100">
+                  <i class="bi bi-geo-alt"></i> Pilih Titik Awal
+                </button>
+              </div>
+            </div>
+
+            <!-- Destination Selection (always visible) -->
             <div class="mb-3">
               <label for="destination" class="form-label small fw-semibold text-secondary">Lokasi Wisata</label>
               <div id="wisata-select" placeholder="Pilih Lokasi Wisata"></div>
             </div>
 
+            <!-- Action Buttons -->
             <div class="d-grid gap-2">
               <button id="findRoute" class="btn btn-success btn-sm btn-action">
                 <i class="bi bi-search me-1"></i> Cari Rute
@@ -462,23 +508,6 @@
           </div>
         </div>
       </div>
-
-      <!-- Legend -->
-      <div class="legend card">
-        <h3 class="card-title fs-6 fw-semibold mb-2">Legenda</h3>
-        <div class="mb-1">
-          <div class="legend-color bg-danger"></div>
-          <span class="small">Lokasi Awal</span>
-        </div>
-        <div class="mb-1">
-          <div class="legend-color bg-success"></div>
-          <span class="small">Lokasi Wisata</span>
-        </div>
-        <div>
-          <div class="legend-line bg-primary"></div>
-          <span class="small">Rute Perjalanan</span>
-        </div>
-      </div>
     </div>
   </div>
 @endsection
@@ -523,6 +552,16 @@
       const startEl = document.querySelector('#start-select');
       const wisataEl = document.querySelector('#wisata-select');
 
+      const modeDropdown = document.getElementById('locationModeDropdown');
+      const modeMap = document.getElementById('locationModeMap');
+      const dropdownEl = document.getElementById('dropdownSelectMode');
+      const mapClickEl = document.getElementById('mapClickMode');
+      const btnSetStart = document.getElementById('setStartPoint');
+      const inpStartLat = document.getElementById('startLat');
+      const inpStartLng = document.getElementById('startLng');
+      const findRouteBtn = document.getElementById('findRoute');
+      const resetMapBtn = document.getElementById('resetMap');
+
       VirtualSelect.init({
         ele: startEl,
         multiple: false,
@@ -543,17 +582,76 @@
         search: true,
       });
 
+      function updateLocationMode() {
+        if (modeDropdown.checked) {
+          dropdownEl.classList.remove('d-none');
+          mapClickEl.classList.add('d-none');
+        } else {
+          dropdownEl.classList.add('d-none');
+          mapClickEl.classList.remove('d-none');
+        }
+      }
+      modeDropdown.addEventListener('change', updateLocationMode);
+      modeMap.addEventListener('change', updateLocationMode);
+      updateLocationMode();
+
+      // Ikon untuk titik awal - masih menggunakan marker merah
       const redIcon = L.icon({
-        iconUrl: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
-        iconSize: [32, 32],
+        iconUrl: '{{ asset('assets/img/legends/halte.png') }}',
+        iconSize: [28, 28],
+        iconAnchor: [16, 32]
+      });
+      const selfIcon = L.icon({
+        iconUrl: '{{ asset('assets/img/legends/pin.png') }}',
+        iconSize: [28, 28],
         iconAnchor: [16, 32]
       });
 
-      const greenIcon = L.icon({
-        iconUrl: 'https://maps.google.com/mapfiles/ms/icons/green-dot.png',
-        iconSize: [32, 32],
-        iconAnchor: [16, 32]
-      });
+      // Cache untuk menyimpan ikon yang sudah dibuat
+      const categoryIconCache = {};
+
+      // Mapping kategori ke URL ikon Flaticon
+      const categoryIconMap = {
+        'default': '{{ asset('assets/img/legends/default.png') }}',
+        'Bangunan Bersejarah': '{{ asset('assets/img/legends/sejarah.png') }}',
+        'Taman': '{{ asset('assets/img/legends/taman.png') }}',
+        'Stadium': '{{ asset('assets/img/legends/stadium.png') }}',
+        'Museum': '{{ asset('assets/img/legends/museum.png') }}',
+        'Kebun Binatang': '{{ asset('assets/img/legends/zoo.png') }}',
+        'Mall': '{{ asset('assets/img/legends/mall.png') }}',
+        'Lapangan': '{{ asset('assets/img/legends/lapangan.png') }}',
+        'Monumen': '{{ asset('assets/img/legends/monumen.png') }}',
+        'Danau Wisata': '{{ asset('assets/img/legends/danau.png') }}',
+      };
+
+      // Fungsi untuk mendapatkan ikon berdasarkan kategori
+      function getIconByCategory(category) {
+        if (!category || !categoryIconMap[category]) {
+          if (!categoryIconCache.default) {
+            categoryIconCache.default = L.icon({
+              iconUrl: categoryIconMap.default,
+              iconSize: [28, 28],
+              iconAnchor: [16, 32],
+              popupAnchor: [0, -32]
+            });
+          }
+          return categoryIconCache.default;
+        }
+
+        if (categoryIconCache[category]) {
+          return categoryIconCache[category];
+        }
+
+        // Buat ikon baru dan simpan di cache
+        categoryIconCache[category] = L.icon({
+          iconUrl: categoryIconMap[category],
+          iconSize: [32, 32],
+          iconAnchor: [16, 32],
+          popupAnchor: [0, -32]
+        });
+
+        return categoryIconCache[category];
+      }
 
       const map = L.map('map').setView([3.5952, 98.6722], 12);
 
@@ -599,6 +697,13 @@
       function clearAllLayers() {
         wisataPointsLayer.clearLayers();
         routeLayer.clearLayers();
+        if (currentRouting) {
+          map.removeControl(currentRouting);
+          currentRouting = null;
+        }
+
+
+
       }
 
       // Show all markers function
@@ -617,22 +722,24 @@
             .on('click', function() {
               startEl.setValue(point.id);
 
-
               if (wisataEl.virtualSelect.getValue()) {
                 showSelectedRoute();
               }
-            });;
+            });
 
           startPointsLayer.addLayer(marker);
         });
 
-        // Add wisata points to layer
+        // Add wisata points to layer with category-based icons
         pointWisata.forEach(point => {
           const geo = JSON.parse(point.geojson);
           const coords = geo.coordinates;
 
+          // Gunakan ikon sesuai kategori
+          const icon = getIconByCategory(point.category);
+
           const marker = L.marker([coords[1], coords[0]], {
-              icon: greenIcon
+              icon: icon
             })
             .bindPopup(`<b>${point.name}</b><br>${point.desc}`)
             .on('click', function() {
@@ -646,7 +753,7 @@
             <p class="mb-0 small">${point.desc}</p>
           `;
               }
-            });;
+            });
 
           wisataPointsLayer.addLayer(marker);
         });
@@ -658,52 +765,248 @@
         wisataEl.virtualSelect.reset();
       }
 
+      let isSelectingStartPoint = false;
+      let selectedStartMarker = null;
+
+      // Tambahkan event listener untuk tombol "Pilih Titik Awal"
+      btnSetStart.addEventListener('click', function() {
+        if (!isSelectingStartPoint) {
+          // Aktifkan mode pemilihan titik awal
+          isSelectingStartPoint = true;
+          btnSetStart.classList.remove('btn-outline-primary');
+          btnSetStart.classList.add('btn-primary');
+          btnSetStart.innerHTML = '<i class="bi bi-geo-alt-fill"></i> Klik pada peta';
+
+          // Tampilkan instruksi kepada pengguna
+          alert('Silakan klik pada peta untuk menentukan titik awal');
+        } else {
+          // Nonaktifkan mode pemilihan titik awal
+          isSelectingStartPoint = false;
+          btnSetStart.classList.remove('btn-primary');
+          btnSetStart.classList.add('btn-outline-primary');
+          btnSetStart.innerHTML = '<i class="bi bi-geo-alt"></i> Pilih Titik Awal';
+        }
+      });
+
+      // Tambahkan event listener untuk klik pada peta
+      map.on('click', function(e) {
+        if (isSelectingStartPoint) {
+          const lat = e.latlng.lat;
+          const lng = e.latlng.lng;
+
+          // Isi nilai input dengan koordinat yang dipilih
+          inpStartLat.value = lat.toFixed(6);
+          inpStartLng.value = lng.toFixed(6);
+
+          // Hapus marker titik awal sebelumnya jika ada
+          if (selectedStartMarker) {
+            map.removeLayer(selectedStartMarker);
+          }
+
+          // Tambahkan marker baru pada posisi yang dipilih
+          selectedStartMarker = L.marker([lat, lng], {
+            icon: selfIcon,
+            draggable: true // Memungkinkan marker dapat di-drag untuk penyesuaian
+          }).addTo(map);
+
+          // Event ketika marker di-drag
+          selectedStartMarker.on('dragend', function(event) {
+            const marker = event.target;
+            const position = marker.getLatLng();
+            inpStartLat.value = position.lat.toFixed(6);
+            inpStartLng.value = position.lng.toFixed(6);
+          });
+
+          // Nonaktifkan mode pemilihan titik
+          isSelectingStartPoint = false;
+          btnSetStart.classList.remove('btn-primary');
+          btnSetStart.classList.add('btn-outline-success');
+          btnSetStart.innerHTML = '<i class="bi bi-check-circle"></i> Titik Awal Dipilih';
+
+          // Setelah 2 detik, kembalikan tampilan tombol ke normal
+          setTimeout(() => {
+            btnSetStart.classList.remove('btn-outline-success');
+            btnSetStart.classList.add('btn-outline-primary');
+            btnSetStart.innerHTML = '<i class="bi bi-geo-alt"></i> Ubah Titik Awal';
+          }, 2000);
+        }
+      });
+
       // Show selected route function
       function showSelectedRoute() {
         clearAllLayers();
         startPointsLayer.clearLayers();
 
-        const startId = startEl.virtualSelect.getValue();
+        let startLat, startLng, startInfo;
         const wisataId = wisataEl.virtualSelect.getValue();
 
-        const start = pointStart.find(p => p.id == startId);
+        // Cek apakah menggunakan mode dropdown atau map click
+        if (modeDropdown.checked) {
+          // Mode dropdown - gunakan titik awal dari dropdown
+          const startId = startEl.virtualSelect.getValue();
+          const start = pointStart.find(p => p.id == startId);
+
+          if (!start) {
+            alert("Silakan pilih titik awal.");
+            return;
+          }
+
+          const startCoords = JSON.parse(start.geojson).coordinates;
+          startLat = startCoords[1];
+          startLng = startCoords[0];
+          startInfo = `<b>${start.name}</b><br>${start.desc}`;
+        } else {
+          // Mode map click - gunakan titik awal dari input lat/lng
+          startLat = parseFloat(inpStartLat.value);
+          startLng = parseFloat(inpStartLng.value);
+
+          if (isNaN(startLat) || isNaN(startLng)) {
+            alert("Silakan pilih titik awal dengan mengklik pada peta.");
+            return;
+          }
+
+          startInfo = `<b>Lokasi Pilihan</b><br>Lat: ${startLat.toFixed(6)}, Lng: ${startLng.toFixed(6)}`;
+        }
+
         const wisata = pointWisata.find(p => p.id == wisataId);
 
-        if (!start || !wisata) {
-          alert("Silakan pilih titik awal dan lokasi wisata.");
+        if (!wisata) {
+          alert("Silakan pilih lokasi wisata.");
           return;
         }
 
-        const startCoords = JSON.parse(start.geojson).coordinates;
         const wisataCoords = JSON.parse(wisata.geojson).coordinates;
-
-        const selectedStartCoords = [startCoords[1], startCoords[0]];
+        const selectedStartCoords = [startLat, startLng];
         const selectedWisataCoords = [wisataCoords[1], wisataCoords[0]];
+
+        // Tampilkan loading
+        document.getElementById('loading').classList.remove('d-none');
 
         // Add markers to route layer
         const startMarker = L.marker(selectedStartCoords, {
-            icon: redIcon
-          })
-          .bindPopup(`<b>${start.name}</b><br>${start.desc}`);
+          icon: redIcon
+        }).bindPopup(startInfo);
 
+        // Gunakan ikon sesuai kategori untuk marker wisata tujuan
+        const wisataIcon = getIconByCategory(wisata.category);
         const wisataMarker = L.marker(selectedWisataCoords, {
-            icon: greenIcon
-          })
-          .bindPopup(`<b>${wisata.name}</b><br>${wisata.desc}`);
+          icon: wisataIcon
+        }).bindPopup(`<b>${wisata.name}</b><br>${wisata.desc}`);
 
         routeLayer.addLayer(startMarker);
         routeLayer.addLayer(wisataMarker);
 
-        // Fit bounds to show both markers
-        const bounds = L.latLngBounds([selectedStartCoords, selectedWisataCoords]);
-        map.fitBounds(bounds, {
-          padding: [70, 70]
-        });
+        // Untuk mode map click, kita perlu menggunakan rute alternatif
+        // karena tidak ada ID titik awal yang tersedia
+        if (modeDropdown.checked) {
+          // Gunakan jalur yang sudah ada di database
+          const startId = startEl.virtualSelect.getValue();
+          const fetchJalur = `/peta/jalur/${startId}/${wisataId}`;
+
+          fetch(fetchJalur, {
+              method: 'GET',
+            })
+            .then(res => res.json())
+            .then(data => {
+              const geojsonFeature = {
+                type: 'Feature',
+                geometry: data.geom
+              };
+
+              const geoLayer = L.geoJSON(geojsonFeature, {
+                style: {
+                  color: '#007bff',
+                  weight: 4,
+                  opacity: 0.9
+                }
+              });
+
+              geoLayer.addTo(routeLayer);
+
+              const bounds = L.latLngBounds([selectedStartCoords, selectedWisataCoords]);
+              map.fitBounds(bounds, {
+                padding: [70, 70]
+              });
+
+              // Sembunyikan loading
+              document.getElementById('loading').classList.add('d-none');
+
+              // Tampilkan informasi rute (jika tersedia)
+              if (data.distance && data.duration) {
+                document.getElementById('routeDistance').textContent = `Jarak: ${(data.distance / 1000).toFixed(2)} km`;
+                document.getElementById('routeDuration').textContent =
+                  `Waktu Tempuh: ${Math.round(data.duration / 60)} menit`;
+                document.getElementById('routeInfo').classList.remove('d-none');
+              }
+            })
+            .catch(error => {
+              console.error("Gagal ambil jalur:", error);
+              document.getElementById('loading').classList.add('d-none');
+
+              // Jika gagal, gunakan routing machine sebagai fallback
+              useRoutingMachine(selectedStartCoords, selectedWisataCoords);
+            });
+        } else {
+          // Untuk mode map click, gunakan Leaflet Routing Machine
+          useRoutingMachine(selectedStartCoords, selectedWisataCoords);
+        }
 
         document.getElementById('touristInfo').innerHTML = `
-      <h6 class="fw-bold mb-1 text-success">${wisata.name}</h6>
-      <p class="mb-0 small">${wisata.desc}</p>
-    `;
+    <h6 class="fw-bold mb-1 text-success">${wisata.name}</h6>
+    <p class="mb-0 small">${wisata.desc}</p>
+  `;
+      }
+
+
+      let currentRouting = null;
+      // Fungsi untuk menggunakan Leaflet Routing Machine
+      function useRoutingMachine(startCoords, destCoords) {
+        // Hapus routing lama jika ada
+        if (currentRouting) {
+          map.removeControl(currentRouting);
+          currentRouting = null;
+        }
+
+        // Buat rute baru
+        currentRouting = L.Routing.control({
+          waypoints: [
+            L.latLng(startCoords[0], startCoords[1]),
+            L.latLng(destCoords[0], destCoords[1])
+          ],
+          routeWhileDragging: false,
+          addWaypoints: false,
+          showAlternatives: false,
+          fitSelectedRoutes: true,
+          lineOptions: {
+            styles: [{
+              color: '#007bff',
+              opacity: 0.9,
+              weight: 4
+            }]
+          },
+          createMarker: function() {
+            return null;
+          },
+          show: false,
+          collapsible: true,
+          containerClassName: 'd-none'
+        }).addTo(map);
+
+        // Event saat rute ditemukan
+        currentRouting.on('routesfound', function(e) {
+          const routes = e.routes;
+          const summary = routes[0].summary;
+
+          // Tampilkan info rute
+          document.getElementById('routeDistance').textContent =
+            `Jarak: ${(summary.totalDistance / 1000).toFixed(2)} km`;
+          document.getElementById('routeDuration').textContent =
+            `Waktu Tempuh: ${Math.round(summary.totalTime / 60)} menit`;
+          document.getElementById('routeInfo').classList.remove('d-none');
+
+          // Sembunyikan loading
+          document.getElementById('loading').classList.add('d-none');
+        });
       }
 
       // Show wisata by category function
@@ -739,7 +1042,7 @@
 
         const markerCoords = [];
 
-        // Add filtered wisata points to layer
+        // Add filtered wisata points to layer with category-based icons
         filtered.forEach(point => {
           const geo = JSON.parse(point.geojson);
           const coords = geo.coordinates;
@@ -748,8 +1051,11 @@
 
           markerCoords.push(latLng);
 
+          // Gunakan ikon sesuai kategori
+          const icon = getIconByCategory(point.category);
+
           const marker = L.marker(latLng, {
-              icon: greenIcon
+              icon: icon
             }).bindPopup(`<b>${point.name}</b><br>${point.desc}`)
             .on('click', function() {
               wisataEl.setValue(point.id);
@@ -762,7 +1068,7 @@
             <p class="mb-0 small">${point.desc}</p>
           `;
               }
-            });;
+            });
 
           wisataPointsLayer.addLayer(marker);
         });
@@ -795,9 +1101,56 @@
         wisataEl.virtualSelect = document.querySelector('#wisata-select').virtualSelect;
       }
 
+      // Tambahkan legend/legenda untuk menampilkan keterangan icon kategori
+      function addLegend() {
+        const legend = L.control({
+          position: 'bottomright'
+        });
+
+        legend.onAdd = function(map) {
+          const div = L.DomUtil.create('div', 'info legend');
+          div.style.backgroundColor = 'white';
+          div.style.padding = '10px';
+          div.style.borderRadius = '5px';
+          div.style.boxShadow = '0 1px 5px rgba(0,0,0,0.2)';
+
+          div.innerHTML = '<h6 class="mb-2"><b>Legenda</b></h6>';
+
+          div.innerHTML +=
+            '<div><img src="{{ asset('assets/img/legends/halte.png') }}" width="16" height="16"> Titik Awal</div>';
+
+          // Kumpulkan kategori unik dari data
+          const uniqueCategories = [];
+          pointWisata.forEach(point => {
+            if (point.category && !uniqueCategories.includes(point.category)) {
+              uniqueCategories.push(point.category);
+            }
+          });
+
+          // Tambahkan keterangan untuk masing-masing kategori unik
+          uniqueCategories.forEach(category => {
+            // Dapatkan URL ikon untuk kategori ini
+            const iconUrl = categoryIconMap[category] || categoryIconMap.default;
+            div.innerHTML += `<div><img src="${iconUrl}" width="16" height="16"> ${category}</div>`;
+          });
+
+          return div;
+        };
+
+        legend.addTo(map);
+      }
+
       // Event listeners
       document.getElementById('findRoute').addEventListener('click', showSelectedRoute);
       document.getElementById('resetMap').addEventListener('click', showAllMarkers);
+      document.getElementById('resetMap').addEventListener('click', function() {
+        document.querySelectorAll('.filter-badge').forEach(function(el) {
+          el.classList.remove('active');
+        });
+        document.querySelector('.filter-badge[data-category="all"]').classList.add('active');
+        showWisataByCategory('all');
+      });
+
 
       // Category filter event listeners
       document.querySelectorAll('#categoryFilters .filter-badge').forEach(btn => {
@@ -852,8 +1205,28 @@
         }, 100);
       });
 
-      // Initialize the map with all markers
+      resetMapBtn.addEventListener('click', function() {
+        if (selectedStartMarker) {
+          map.removeLayer(selectedStartMarker);
+          selectedStartMarker = null;
+        }
+
+        inpStartLat.value = '';
+        inpStartLng.value = '';
+        btnSetStart.classList.remove('btn-outline-success', 'btn-primary');
+        btnSetStart.classList.add('btn-outline-primary');
+        btnSetStart.innerHTML = '<i class="bi bi-geo-alt"></i> Pilih Titik Awal';
+
+        document.getElementById('routeInfo').classList.add('d-none');
+
+        showAllMarkers();
+      });
+
+      // Initialize the map with all markers and add legend
       showAllMarkers();
+      addLegend();
     }
   </script>
+
+  <script></script>
 @endpush
