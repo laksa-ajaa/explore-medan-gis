@@ -16,10 +16,10 @@ class PetaController extends Controller
      */
     public function index()
     {
-        $this->data['point_start'] = PointStart::select('id', 'name', 'desc', 'type', DB::raw('ST_AsGeoJSON(geom) as geojson'))
+        $this->data['point_start'] = PointStart::select('id', 'name', 'alamat', 'type', DB::raw('ST_AsGeoJSON(geom) as geojson'))
             ->get();
 
-        $this->data['point_wisata'] = PointWisata::select('id', 'name', 'desc', 'category', DB::raw('ST_AsGeoJSON(geom) as geojson'))
+        $this->data['point_wisata'] = PointWisata::select('id', 'name', 'rating', 'desc', 'category', DB::raw('ST_AsGeoJSON(geom) as geojson'))
             ->get();
         $this->data['kecamatan'] = Kecamatan::select('id', 'name', 'code', DB::raw('ST_AsGeoJSON(geom) as geojson'))
             ->get();

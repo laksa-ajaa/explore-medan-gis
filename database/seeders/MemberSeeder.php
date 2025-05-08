@@ -17,7 +17,7 @@ class MemberSeeder extends Seeder
             [
                 'name' => 'Brema Arihta Siregar',
                 'nim' => '2205181078',
-                'email' => 'bremasiregar@Gmail.com',
+                'email' => 'bremasiregar@gmail.com',
                 'photo' => 'brema.webp',
                 'linkedIn' => '',
                 'github' => '',

@@ -278,6 +278,14 @@
       border-bottom: 2px solid #e9ecef;
     }
 
+    .leaflet-interactive {
+      cursor: pointer;
+    }
+
+    .selecting-start-point .leaflet-interactive {
+      cursor: crosshair !important;
+    }
+
     /* Animation */
     @keyframes fadeIn {
       from {
@@ -422,16 +430,9 @@
             </div>
             <div class="d-flex flex-wrap mt-2" id="districtFilters">
               <span class="filter-badge active" data-district="all">Semua</span>
-              <span class="filter-badge" data-district="medan-kota">Medan Kota</span>
-              <span class="filter-badge" data-district="medan-petisah">Medan Petisah</span>
-              <span class="filter-badge" data-district="medan-barat">Medan Barat</span>
-              <span class="filter-badge" data-district="medan-timur">Medan Timur</span>
-              <span class="filter-badge" data-district="medan-maimun">Medan Maimun</span>
-              <span class="filter-badge" data-district="medan-polonia">Medan Polonia</span>
-              <span class="filter-badge" data-district="medan-baru">Medan Baru</span>
-              <span class="filter-badge" data-district="medan-tuntungan">Medan Tuntungan</span>
-              <span class="filter-badge" data-district="medan-selayang">Medan Selayang</span>
-              <span class="filter-badge" data-district="medan-johor">Medan Johor</span>
+              @foreach ($kecamatan->take(10) as $kec)
+                <span class="filter-badge" data-district="{{ $kec['name'] }}">{{ $kec['name'] }}</span>
+              @endforeach
             </div>
           </div>
         </div>
@@ -545,6 +546,7 @@
       const pointStart = @json($point_start);
       const pointWisata = @json($point_wisata);
       const kecamatan = @json($kecamatan);
+      console.log(kecamatan)
 
       // Default tourist info
       const defaultTouristInfo = document.getElementById('touristInfo').innerHTML;
@@ -670,6 +672,335 @@
       const routeLayer = L.layerGroup().addTo(map);
       let kecamatanLayer;
 
+      kecamatanLayer = L.layerGroup();
+      const kecamatanPolygons = {}; // Store polygon references by district name
+
+      // Create district polygons from GeoJSON
+      kecamatan.forEach(district => {
+        if (district.geojson) {
+          const geojson = JSON.parse(district.geojson);
+          const polygon = L.geoJSON(geojson, {
+            style: {
+              color: '#28a745',
+              weight: 2,
+              opacity: 0.6,
+              fillColor: '#28a745',
+              fillOpacity: 0.1
+            },
+            // Tambahkan event handler untuk klik pada polygon
+            onEachFeature: function(feature, layer) {
+              layer.on('click', function(e) {
+                // Handle klik pada polygon kecamatan
+                if (isSelectingStartPoint) {
+                  // Ambil koordinat klik
+                  const lat = e.latlng.lat;
+                  const lng = e.latlng.lng;
+
+                  // Isi nilai input dengan koordinat yang dipilih
+                  inpStartLat.value = lat.toFixed(6);
+                  inpStartLng.value = lng.toFixed(6);
+
+                  // Hapus marker titik awal sebelumnya jika ada
+                  if (selectedStartMarker) {
+                    map.removeLayer(selectedStartMarker);
+                  }
+
+                  // Tambahkan marker baru pada posisi yang dipilih
+                  selectedStartMarker = L.marker([lat, lng], {
+                    icon: selfIcon,
+                    draggable: true // Memungkinkan marker dapat di-drag untuk penyesuaian
+                  }).addTo(map);
+
+                  // Event ketika marker di-drag
+                  selectedStartMarker.on('dragend', function(event) {
+                    const marker = event.target;
+                    const position = marker.getLatLng();
+                    inpStartLat.value = position.lat.toFixed(6);
+                    inpStartLng.value = position.lng.toFixed(6);
+                  });
+
+                  // Nonaktifkan mode pemilihan titik
+                  isSelectingStartPoint = false;
+                  btnSetStart.classList.remove('btn-primary');
+                  btnSetStart.classList.add('btn-outline-success');
+                  btnSetStart.innerHTML = '<i class="bi bi-check-circle"></i> Titik Awal Dipilih';
+
+                  // Setelah 2 detik, kembalikan tampilan tombol ke normal
+                  setTimeout(() => {
+                    btnSetStart.classList.remove('btn-outline-success');
+                    btnSetStart.classList.add('btn-outline-primary');
+                    btnSetStart.innerHTML = '<i class="bi bi-geo-alt"></i> Ubah Titik Awal';
+                  }, 2000);
+                }
+              });
+              layer.bindPopup(`<b>${district.name}</b>`);
+            }
+          });
+
+          // Store reference to polygon
+          kecamatanPolygons[district.name] = polygon;
+
+          // Add to layer group
+          kecamatanLayer.addLayer(polygon);
+        }
+      });
+
+      // Add kecamatanLayer to map by default
+      kecamatanLayer.addTo(map);
+
+      // Make district layer checkbox checked by default
+      document.getElementById('layerDistrict').checked = true;
+
+      // District filter event listeners
+      document.querySelectorAll('#districtFilters .filter-badge').forEach(btn => {
+        btn.addEventListener('click', function() {
+          // Toggle active class
+          document.querySelectorAll('#districtFilters .filter-badge').forEach(el =>
+            el.classList.remove('active'));
+          this.classList.add('active');
+
+          const selectedDistrict = this.getAttribute('data-district');
+          filterByDistrict(selectedDistrict);
+        });
+      });
+
+      // District search functionality
+      document.getElementById('districtSearch').addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        const districtFilters = document.getElementById('districtFilters');
+
+        // Clear previous filters
+        districtFilters.innerHTML = '<span class="filter-badge" data-district="all">Semua</span>';
+
+        // Filter and add matching districts
+        const matchingDistricts = kecamatan.filter(kec =>
+          kec.name.toLowerCase().includes(searchTerm)
+        );
+
+        matchingDistricts.forEach(kec => {
+          const badge = document.createElement('span');
+          badge.className = 'filter-badge';
+          badge.setAttribute('data-district', kec.name);
+          badge.textContent = kec.name;
+
+          badge.addEventListener('click', function() {
+            document.querySelectorAll('#districtFilters .filter-badge').forEach(el =>
+              el.classList.remove('active'));
+            this.classList.add('active');
+
+            filterByDistrict(kec.name);
+          });
+
+          districtFilters.appendChild(badge);
+        });
+
+        // Make "All" active by default
+        document.querySelector('#districtFilters .filter-badge[data-district="all"]').classList.add('active');
+      });
+
+      // Function to filter by district
+      function filterByDistrict(district) {
+        // Reset all district polygon styles
+        Object.values(kecamatanPolygons).forEach(polygon => {
+          polygon.setStyle({
+            color: '#28a745',
+            weight: 2,
+            opacity: 0.6,
+            fillColor: '#28a745',
+            fillOpacity: 0.1
+          });
+        });
+
+        if (district === 'all') {
+          // Show all districts without highlighting
+          document.getElementById('routeInfo').classList.add('d-none');
+
+          // Keep all points visible
+          startPointsLayer.clearLayers();
+          wisataPointsLayer.clearLayers();
+
+          // Re-add all start points
+          pointStart.forEach(point => {
+            const geo = JSON.parse(point.geojson);
+            const coords = geo.coordinates;
+
+            const marker = L.marker([coords[1], coords[0]], {
+                icon: redIcon
+              })
+              .bindPopup(`<b>${point.name}</b><br>${point.alamat}`)
+              .on('click', function() {
+                startEl.setValue(point.id);
+
+                if (wisataEl.virtualSelect.getValue()) {
+                  showSelectedRoute();
+                }
+              });
+
+            startPointsLayer.addLayer(marker);
+          });
+
+          // Re-add all wisata points
+          pointWisata.forEach(point => {
+            const geo = JSON.parse(point.geojson);
+            const coords = geo.coordinates;
+
+            const icon = getIconByCategory(point.category);
+
+            const popupContent = `
+                <div style="min-width: 180px;">
+                  <h6 class="fw-bold text-success mb-1">${point.name}</h6>
+                  <p class="mb-1">${point.desc}</p>
+                  <p class="mb-0 small text-muted">Rating: ${point.rating}</p>
+                </div>
+              `;
+
+            const marker = L.marker([coords[1], coords[0]], {
+                icon: icon
+              })
+              .bindPopup(popupContent)
+              .on('click', function() {
+                wisataEl.setValue(point.id);
+
+                if (startEl.virtualSelect.getValue()) {
+                  showSelectedRoute();
+                } else {
+                  document.getElementById('touristInfo').innerHTML = `
+                  <div style="min-width: 180px;">
+                    <h6 class="fw-bold text-success mb-1">${point.name}</h6>
+                    <p class="mb-1">${point.desc}</p>
+                    <p class="mb-0 small text-muted">Rating: ${point.rating}</p>
+                  </div>
+                `;
+                }
+              });
+
+            wisataPointsLayer.addLayer(marker);
+          });
+
+          // Reset map view
+          map.setView([3.5952, 98.6722], 12);
+
+          return;
+        }
+
+        // Highlight selected district polygon
+        if (kecamatanPolygons[district]) {
+          kecamatanPolygons[district].setStyle({
+            color: '#fd7e14',
+            weight: 3,
+            opacity: 1,
+            fillColor: '#fd7e14',
+            fillOpacity: 0.2
+          });
+
+          // Zoom to the selected district
+          map.fitBounds(kecamatanPolygons[district].getBounds());
+
+          // Bring the highlighted polygon to front
+          kecamatanPolygons[district].bringToFront();
+        }
+
+        // Keep all start points visible but filter wisata points to show only those in the selected district
+
+        // Re-add all start points
+        pointStart.forEach(point => {
+          const geo = JSON.parse(point.geojson);
+          const coords = geo.coordinates;
+
+          const marker = L.marker([coords[1], coords[0]], {
+              icon: redIcon
+            })
+            .bindPopup(`<b>${point.name}</b><br>${point.alamat}`)
+            .on('click', function() {
+              startEl.setValue(point.id);
+
+              if (wisataEl.virtualSelect.getValue()) {
+                showSelectedRoute();
+              }
+            });
+
+          startPointsLayer.addLayer(marker);
+        });
+
+        // Filter and add wisata points in the selected district
+        const filteredWisata = pointWisata.filter(point => point.kecamatan === district);
+
+        filteredWisata.forEach(point => {
+          const geo = JSON.parse(point.geojson);
+          const coords = geo.coordinates;
+
+          // Use icon based on category
+          const icon = getIconByCategory(point.category);
+
+          const marker = L.marker([coords[1], coords[0]], {
+              icon: icon
+            })
+            .bindPopup(`<b>${point.name}</b><br>${point.desc}`)
+            .on('click', function() {
+              wisataEl.setValue(point.id);
+
+              if (startEl.virtualSelect.getValue()) {
+                showSelectedRoute();
+              } else {
+                document.getElementById('touristInfo').innerHTML = `
+          <h6 class="fw-bold mb-1 text-success">${point.name}</h6>
+          <p class="mb-0 small">${point.desc}</p>
+        `;
+              }
+            });
+
+          wisataPointsLayer.addLayer(marker);
+        });
+
+        // Update the dropdown to only show wisata points in this district
+        const wisataSelectContainer = document.querySelector('#wisata-select');
+        wisataSelectContainer.innerHTML = '';
+
+        if (wisataEl.virtualSelect && typeof wisataEl.virtualSelect.destroy === 'function') {
+          wisataEl.virtualSelect.destroy();
+        }
+
+        VirtualSelect.init({
+          ele: wisataSelectContainer,
+          multiple: false,
+          options: filteredWisata.map(point => ({
+            label: point.name,
+            value: point.id
+          })),
+          search: true,
+        });
+
+        wisataEl.virtualSelect = document.querySelector('#wisata-select').virtualSelect;
+      }
+
+      // Update the resetMap button to also reset district filters
+      const originalResetMapListener = resetMapBtn.onclick;
+      resetMapBtn.onclick = function() {
+        // Reset district filter badges
+        document.querySelectorAll('#districtFilters .filter-badge').forEach(function(el) {
+          el.classList.remove('active');
+        });
+        document.querySelector('#districtFilters .filter-badge[data-district="all"]').classList.add('active');
+
+        // Reset district polygons styles
+        if (kecamatanPolygons) {
+          Object.values(kecamatanPolygons).forEach(polygon => {
+            polygon.setStyle({
+              color: '#28a745',
+              weight: 2,
+              opacity: 0.6,
+              fillColor: '#28a745',
+              fillOpacity: 0.1
+            });
+          });
+        }
+
+        // Call the original reset function
+        if (originalResetMapListener) {
+          originalResetMapListener.call(this);
+        }
+      };
+
       // Layer control event listeners
       document.getElementById('layerOSM').addEventListener('change', function() {
         if (this.checked) {
@@ -701,9 +1032,6 @@
           map.removeControl(currentRouting);
           currentRouting = null;
         }
-
-
-
       }
 
       // Show all markers function
@@ -718,7 +1046,7 @@
           const marker = L.marker([coords[1], coords[0]], {
               icon: redIcon
             })
-            .bindPopup(`<b>${point.name}</b><br>${point.desc}`)
+            .bindPopup(`<b>${point.name}</b><br>${point.alamat}`)
             .on('click', function() {
               startEl.setValue(point.id);
 
@@ -735,13 +1063,20 @@
           const geo = JSON.parse(point.geojson);
           const coords = geo.coordinates;
 
-          // Gunakan ikon sesuai kategori
           const icon = getIconByCategory(point.category);
+
+          const popupContent = `
+    <div style="min-width: 180px;">
+      <h6 class="fw-bold text-success mb-1">${point.name}</h6>
+      <p class="mb-1">${point.desc}</p>
+      <p class="mb-0 small text-muted">Rating: ${point.rating}</p>
+    </div>
+  `;
 
           const marker = L.marker([coords[1], coords[0]], {
               icon: icon
             })
-            .bindPopup(`<b>${point.name}</b><br>${point.desc}`)
+            .bindPopup(popupContent)
             .on('click', function() {
               wisataEl.setValue(point.id);
 
@@ -749,9 +1084,12 @@
                 showSelectedRoute();
               } else {
                 document.getElementById('touristInfo').innerHTML = `
-            <h6 class="fw-bold mb-1 text-success">${point.name}</h6>
-            <p class="mb-0 small">${point.desc}</p>
-          `;
+          <div style="min-width: 180px;">
+            <h6 class="fw-bold text-success mb-1">${point.name}</h6>
+            <p class="mb-1">${point.desc}</p>
+            <p class="mb-0 small text-muted">Rating: ${point.rating}</p>
+          </div>
+        `;
               }
             });
 
@@ -777,14 +1115,38 @@
           btnSetStart.classList.add('btn-primary');
           btnSetStart.innerHTML = '<i class="bi bi-geo-alt-fill"></i> Klik pada peta';
 
+          // Ubah style polygon saat mode pemilihan aktif - highlight semua kecamatan
+          Object.values(kecamatanPolygons).forEach(polygon => {
+            polygon.setStyle({
+              color: '#28a745',
+              weight: 2,
+              opacity: 0.8,
+              fillColor: '#28a745',
+              fillOpacity: 0.2,
+              cursor: 'pointer'
+            });
+          });
+
           // Tampilkan instruksi kepada pengguna
-          alert('Silakan klik pada peta untuk menentukan titik awal');
+          alert('Silakan klik pada peta atau area kecamatan untuk menentukan titik awal');
         } else {
           // Nonaktifkan mode pemilihan titik awal
           isSelectingStartPoint = false;
           btnSetStart.classList.remove('btn-primary');
           btnSetStart.classList.add('btn-outline-primary');
           btnSetStart.innerHTML = '<i class="bi bi-geo-alt"></i> Pilih Titik Awal';
+
+          // Kembalikan style polygon ke normal
+          Object.values(kecamatanPolygons).forEach(polygon => {
+            polygon.setStyle({
+              color: '#28a745',
+              weight: 2,
+              opacity: 0.6,
+              fillColor: '#28a745',
+              fillOpacity: 0.1,
+              cursor: ''
+            });
+          });
         }
       });
 
@@ -840,9 +1202,9 @@
         let startLat, startLng, startInfo;
         const wisataId = wisataEl.virtualSelect.getValue();
 
-        // Cek apakah menggunakan mode dropdown atau map click
+        // Check if using dropdown mode or map click
         if (modeDropdown.checked) {
-          // Mode dropdown - gunakan titik awal dari dropdown
+          // Dropdown mode - use starting point from dropdown
           const startId = startEl.virtualSelect.getValue();
           const start = pointStart.find(p => p.id == startId);
 
@@ -854,9 +1216,9 @@
           const startCoords = JSON.parse(start.geojson).coordinates;
           startLat = startCoords[1];
           startLng = startCoords[0];
-          startInfo = `<b>${start.name}</b><br>${start.desc}`;
+          startInfo = `<b>${start.name}</b><br>${start.alamat}`;
         } else {
-          // Mode map click - gunakan titik awal dari input lat/lng
+          // Map click mode - use starting point from lat/lng inputs
           startLat = parseFloat(inpStartLat.value);
           startLng = parseFloat(inpStartLng.value);
 
@@ -879,7 +1241,7 @@
         const selectedStartCoords = [startLat, startLng];
         const selectedWisataCoords = [wisataCoords[1], wisataCoords[0]];
 
-        // Tampilkan loading
+        // Show loading indicator
         document.getElementById('loading').classList.remove('d-none');
 
         // Add markers to route layer
@@ -887,19 +1249,25 @@
           icon: redIcon
         }).bindPopup(startInfo);
 
-        // Gunakan ikon sesuai kategori untuk marker wisata tujuan
+        const popupContent = `
+          <div style="min-width: 180px;">
+            <h6 class="fw-bold text-success mb-1">${wisata.name}</h6>
+            <p class="mb-1">${wisata.desc}</p>
+            <p class="mb-0 small text-muted">Rating: ${wisata.rating}</p>
+          </div>
+        `;
+
+        // Use category-based icon for destination marker
         const wisataIcon = getIconByCategory(wisata.category);
         const wisataMarker = L.marker(selectedWisataCoords, {
           icon: wisataIcon
-        }).bindPopup(`<b>${wisata.name}</b><br>${wisata.desc}`);
+        }).bindPopup(popupContent);
 
         routeLayer.addLayer(startMarker);
         routeLayer.addLayer(wisataMarker);
 
-        // Untuk mode map click, kita perlu menggunakan rute alternatif
-        // karena tidak ada ID titik awal yang tersedia
+        // For dropdown mode, we can use the existing route from database
         if (modeDropdown.checked) {
-          // Gunakan jalur yang sudah ada di database
           const startId = startEl.virtualSelect.getValue();
           const fetchJalur = `/peta/jalur/${startId}/${wisataId}`;
 
@@ -928,26 +1296,38 @@
                 padding: [70, 70]
               });
 
-              // Sembunyikan loading
+              // Hide loading indicator
               document.getElementById('loading').classList.add('d-none');
 
-              // Tampilkan informasi rute (jika tersedia)
-              if (data.distance && data.duration) {
-                document.getElementById('routeDistance').textContent = `Jarak: ${(data.distance / 1000).toFixed(2)} km`;
-                document.getElementById('routeDuration').textContent =
-                  `Waktu Tempuh: ${Math.round(data.duration / 60)} menit`;
-                document.getElementById('routeInfo').classList.remove('d-none');
+              // Calculate duration based on the fixed speed (50 km/h)
+              let distance = data.distance || 0; // Distance in meters
+
+              // If we have distance data, use it; otherwise, use the straight-line distance
+              if (!distance) {
+                // Calculate straight line distance using Haversine formula
+                const startLatLng = L.latLng(selectedStartCoords[0], selectedStartCoords[1]);
+                const endLatLng = L.latLng(selectedWisataCoords[0], selectedWisataCoords[1]);
+                distance = startLatLng.distanceTo(endLatLng);
               }
+
+              // Calculate duration using our fixed speed formula
+              const duration = calculateDuration(distance);
+
+              // Display route information
+              document.getElementById('routeDistance').textContent = `Jarak: ${(distance / 1000).toFixed(2)} km`;
+              document.getElementById('routeDuration').textContent =
+                `Waktu Tempuh: ${formatDuration(duration)} (50 km/jam)`;
+              document.getElementById('routeInfo').classList.remove('d-none');
             })
             .catch(error => {
               console.error("Gagal ambil jalur:", error);
               document.getElementById('loading').classList.add('d-none');
 
-              // Jika gagal, gunakan routing machine sebagai fallback
+              // If failed, use Leaflet Routing Machine as fallback
               useRoutingMachine(selectedStartCoords, selectedWisataCoords);
             });
         } else {
-          // Untuk mode map click, gunakan Leaflet Routing Machine
+          // For map click mode, use Leaflet Routing Machine
           useRoutingMachine(selectedStartCoords, selectedWisataCoords);
         }
 
@@ -957,17 +1337,37 @@
   `;
       }
 
+      // Function to calculate duration based on distance and fixed speed (50 km/h)
+      function calculateDuration(distanceInMeters) {
+        const speedKmPerHour = 50; // Fixed speed: 50 km/h
+        const speedMeterPerSecond = speedKmPerHour * 1000 / 3600; // Convert to m/s
+        const durationInSeconds = distanceInMeters / speedMeterPerSecond;
+        return durationInSeconds;
+      }
+
+      // Format duration in a more readable way (hours, minutes)
+      function formatDuration(seconds) {
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+
+        if (hours > 0) {
+          return `${hours} jam ${minutes} menit`;
+        } else {
+          return `${minutes} menit`;
+        }
+      }
+
 
       let currentRouting = null;
       // Fungsi untuk menggunakan Leaflet Routing Machine
       function useRoutingMachine(startCoords, destCoords) {
-        // Hapus routing lama jika ada
+        // Remove old routing if exists
         if (currentRouting) {
           map.removeControl(currentRouting);
           currentRouting = null;
         }
 
-        // Buat rute baru
+        // Create new route
         currentRouting = L.Routing.control({
           waypoints: [
             L.latLng(startCoords[0], startCoords[1]),
@@ -992,19 +1392,22 @@
           containerClassName: 'd-none'
         }).addTo(map);
 
-        // Event saat rute ditemukan
+        // When route is found
         currentRouting.on('routesfound', function(e) {
           const routes = e.routes;
           const summary = routes[0].summary;
+          const distance = summary.totalDistance;
 
-          // Tampilkan info rute
-          document.getElementById('routeDistance').textContent =
-            `Jarak: ${(summary.totalDistance / 1000).toFixed(2)} km`;
+          // Calculate duration using our fixed speed instead of the routing engine's estimate
+          const duration = calculateDuration(distance);
+
+          // Display route info
+          document.getElementById('routeDistance').textContent = `Jarak: ${(distance / 1000).toFixed(2)} km`;
           document.getElementById('routeDuration').textContent =
-            `Waktu Tempuh: ${Math.round(summary.totalTime / 60)} menit`;
+            `Waktu Tempuh: ${formatDuration(duration)} (50 km/jam)`;
           document.getElementById('routeInfo').classList.remove('d-none');
 
-          // Sembunyikan loading
+          // Hide loading indicator
           document.getElementById('loading').classList.add('d-none');
         });
       }
@@ -1023,7 +1426,7 @@
           const marker = L.marker([coords[1], coords[0]], {
               icon: redIcon
             })
-            .bindPopup(`<b>${point.name}</b><br>${point.desc}`)
+            .bindPopup(`<b>${point.name}</b><br>${point.alamat}`)
             .on('click', function() {
               startEl.setValue(point.id);
 
@@ -1048,15 +1451,22 @@
           const coords = geo.coordinates;
 
           const latLng = [coords[1], coords[0]];
-
           markerCoords.push(latLng);
 
-          // Gunakan ikon sesuai kategori
           const icon = getIconByCategory(point.category);
+
+          const popupContent = `
+            <div style="min-width: 180px;">
+              <h6 class="fw-bold text-success mb-1">${point.name}</h6>
+              <p class="mb-1">${point.desc}</p>
+              <p class="mb-0 small text-muted">Rating: ${point.rating}</p>
+            </div>
+          `;
 
           const marker = L.marker(latLng, {
               icon: icon
-            }).bindPopup(`<b>${point.name}</b><br>${point.desc}`)
+            })
+            .bindPopup(popupContent)
             .on('click', function() {
               wisataEl.setValue(point.id);
 
@@ -1064,14 +1474,18 @@
                 showSelectedRoute();
               } else {
                 document.getElementById('touristInfo').innerHTML = `
-            <h6 class="fw-bold mb-1 text-success">${point.name}</h6>
-            <p class="mb-0 small">${point.desc}</p>
-          `;
+          <div style="min-width: 180px;">
+            <h6 class="fw-bold text-success mb-1">${point.name}</h6>
+            <p class="mb-1">${point.desc}</p>
+            <p class="mb-0 small text-muted">Rating: ${point.rating}</p>
+          </div>
+        `;
               }
             });
 
           wisataPointsLayer.addLayer(marker);
         });
+
 
         if (markerCoords.length > 0) {
           const bounds = L.latLngBounds(markerCoords);
@@ -1217,16 +1631,26 @@
         btnSetStart.classList.add('btn-outline-primary');
         btnSetStart.innerHTML = '<i class="bi bi-geo-alt"></i> Pilih Titik Awal';
 
+        // Kembalikan style polygon ke normal
+        isSelectingStartPoint = false;
+        Object.values(kecamatanPolygons).forEach(polygon => {
+          polygon.setStyle({
+            color: '#28a745',
+            weight: 2,
+            opacity: 0.6,
+            fillColor: '#28a745',
+            fillOpacity: 0.1,
+            cursor: ''
+          });
+        });
+
         document.getElementById('routeInfo').classList.add('d-none');
 
         showAllMarkers();
       });
 
-      // Initialize the map with all markers and add legend
       showAllMarkers();
       addLegend();
     }
   </script>
-
-  <script></script>
 @endpush
