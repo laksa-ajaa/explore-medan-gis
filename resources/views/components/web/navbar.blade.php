@@ -1,7 +1,8 @@
 <!-- Navbar -->
 <nav class="navbar navbar-expand-lg navbar-light fixed-top">
   <div class="container-fluid px-5">
-    <a class="navbar-brand" href="{{ route('home') }}">
+    <a class="navbar-brand d-flex align-items-center" href="{{ route('home') }}">
+      <img src="{{ asset('assets/img/logo.png') }}" alt="Logo" height="30" class="me-2">
       <span class="text-primary">Explore</span><span class="text-success">Medan</span>
     </a>
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">

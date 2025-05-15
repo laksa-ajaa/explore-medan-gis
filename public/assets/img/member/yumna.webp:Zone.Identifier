@@ -1,0 +1,4 @@
+[ZoneTransfer]
+ZoneId=3
+ReferrerUrl=https://cloudconvert.com/
+HostUrl=https://eu-central.storage.cloudconvert.com/tasks/f523e29c-cf7f-4382-be0e-04d6058e2223/yumna.webp?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cloudconvert-production%2F20250514%2Ffra%2Fs3%2Faws4_request&X-Amz-Date=20250514T161700Z&X-Amz-Expires=86400&X-Amz-Signature=8f7c7b9fc385646aa268ccf26e53b606d8b1cff88a3ab3be670f790f42ae58ca&X-Amz-SignedHeaders=host&response-content-disposition=attachment%3B%20filename%3D%22yumna.webp%22&response-content-type=image%2Fwebp&x-id=GetObject

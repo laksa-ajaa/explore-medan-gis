@@ -1,0 +1,4 @@
+[ZoneTransfer]
+ZoneId=3
+ReferrerUrl=https://cloudconvert.com/
+HostUrl=https://eu-central.storage.cloudconvert.com/tasks/c61befc3-3c28-4ca2-ab43-6fd0922ba2e1/khoiril.webp?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cloudconvert-production%2F20250514%2Ffra%2Fs3%2Faws4_request&X-Amz-Date=20250514T161658Z&X-Amz-Expires=86400&X-Amz-Signature=a3e76b5e16a3b2b67b75f1ab0748931db09f8ebcb14d4b0cb6bb01205fca1bad&X-Amz-SignedHeaders=host&response-content-disposition=attachment%3B%20filename%3D%22khoiril.webp%22&response-content-type=image%2Fwebp&x-id=GetObject

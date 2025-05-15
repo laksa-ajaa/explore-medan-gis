@@ -19,6 +19,8 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css"
     integrity="sha256-cu3EeyAbdh7FZ58X4+oQz2g30Tw/U+3Utqmr1ETODqQ=" crossorigin="anonymous">
 
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.21.0/dist/sweetalert2.all.min.js"
+    integrity="sha256-TU2eIihLYclo7k5+qmqLlo4q4A8/R0TC5sfcvbzDDFI=" crossorigin="anonymous"></script>
   <style>
     #map {
       height: 90vh;
@@ -286,6 +288,10 @@
       cursor: crosshair !important;
     }
 
+    .vscomp-wrapper {
+      width: 290px;
+    }
+
     /* Animation */
     @keyframes fadeIn {
       from {
@@ -546,7 +552,6 @@
       const pointStart = @json($point_start);
       const pointWisata = @json($point_wisata);
       const kecamatan = @json($kecamatan);
-      console.log(kecamatan)
 
       // Default tourist info
       const defaultTouristInfo = document.getElementById('touristInfo').innerHTML;
@@ -850,6 +855,7 @@
                 <div style="min-width: 180px;">
                   <h6 class="fw-bold text-success mb-1">${point.name}</h6>
                   <p class="mb-1">${point.desc}</p>
+                  <p class="mb-1"><i class="bi bi-geo-alt-fill"></i> ${point.alamat}</p>
                   <p class="mb-0 small text-muted">Rating: ${point.rating}</p>
                 </div>
               `;
@@ -868,6 +874,7 @@
                   <div style="min-width: 180px;">
                     <h6 class="fw-bold text-success mb-1">${point.name}</h6>
                     <p class="mb-1">${point.desc}</p>
+                    <p class="mb-1"><i class="bi bi-geo-alt-fill"></i> ${point.alamat}</p>
                     <p class="mb-0 small text-muted">Rating: ${point.rating}</p>
                   </div>
                 `;
@@ -943,8 +950,12 @@
                 showSelectedRoute();
               } else {
                 document.getElementById('touristInfo').innerHTML = `
-          <h6 class="fw-bold mb-1 text-success">${point.name}</h6>
-          <p class="mb-0 small">${point.desc}</p>
+          <div style="min-width: 180px;">
+                  <h6 class="fw-bold text-success mb-1">${point.name}</h6>
+                  <p class="mb-1">${point.desc}</p>
+                  <p class="mb-1"><i class="bi bi-geo-alt-fill"></i> ${point.alamat}</p>
+                  <p class="mb-0 small text-muted">Rating: ${point.rating}</p>
+                </div>
         `;
               }
             });
@@ -1066,12 +1077,13 @@
           const icon = getIconByCategory(point.category);
 
           const popupContent = `
-    <div style="min-width: 180px;">
-      <h6 class="fw-bold text-success mb-1">${point.name}</h6>
-      <p class="mb-1">${point.desc}</p>
-      <p class="mb-0 small text-muted">Rating: ${point.rating}</p>
-    </div>
-  `;
+                <div style="min-width: 180px;">
+                  <h6 class="fw-bold text-success mb-1">${point.name}</h6>
+                  <p class="mb-1">${point.desc}</p>
+                  <p class="mb-1"><i class="bi bi-geo-alt-fill"></i> ${point.alamat}</p>
+                  <p class="mb-0 small text-muted">Rating: ${point.rating}</p>
+                </div>
+              `;
 
           const marker = L.marker([coords[1], coords[0]], {
               icon: icon
@@ -1084,11 +1096,12 @@
                 showSelectedRoute();
               } else {
                 document.getElementById('touristInfo').innerHTML = `
-          <div style="min-width: 180px;">
-            <h6 class="fw-bold text-success mb-1">${point.name}</h6>
-            <p class="mb-1">${point.desc}</p>
-            <p class="mb-0 small text-muted">Rating: ${point.rating}</p>
-          </div>
+        <div style="min-width: 180px;">
+                  <h6 class="fw-bold text-success mb-1">${point.name}</h6>
+                  <p class="mb-1">${point.desc}</p>
+                  <p class="mb-1"><i class="bi bi-geo-alt-fill"></i> ${point.alamat}</p>
+                  <p class="mb-0 small text-muted">Rating: ${point.rating}</p>
+                </div>
         `;
               }
             });
@@ -1127,8 +1140,15 @@
             });
           });
 
-          // Tampilkan instruksi kepada pengguna
-          alert('Silakan klik pada peta atau area kecamatan untuk menentukan titik awal');
+          // Tampilkan instruksi kepada pengguna menggunakan SweetAlert toast
+          Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: 'info',
+            title: 'Silakan klik pada peta atau area kecamatan untuk menentukan titik awal',
+            showConfirmButton: false,
+            timer: 4000
+          });
         } else {
           // Nonaktifkan mode pemilihan titik awal
           isSelectingStartPoint = false;
@@ -1209,7 +1229,14 @@
           const start = pointStart.find(p => p.id == startId);
 
           if (!start) {
-            alert("Silakan pilih titik awal.");
+            Swal.fire({
+              toast: true,
+              position: 'top-end',
+              icon: 'warning',
+              title: 'Silakan pilih titik awal',
+              showConfirmButton: false,
+              timer: 3000
+            });
             return;
           }
 
@@ -1223,7 +1250,14 @@
           startLng = parseFloat(inpStartLng.value);
 
           if (isNaN(startLat) || isNaN(startLng)) {
-            alert("Silakan pilih titik awal dengan mengklik pada peta.");
+            Swal.fire({
+              toast: true,
+              position: 'top-end',
+              icon: 'warning',
+              title: 'Silakan pilih titik awal dengan mengklik pada peta',
+              showConfirmButton: false,
+              timer: 3000
+            });
             return;
           }
 
@@ -1233,7 +1267,14 @@
         const wisata = pointWisata.find(p => p.id == wisataId);
 
         if (!wisata) {
-          alert("Silakan pilih lokasi wisata.");
+          Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: 'warning',
+            title: 'Silakan pilih lokasi wisata',
+            showConfirmButton: false,
+            timer: 3000
+          });
           return;
         }
 
@@ -1251,10 +1292,11 @@
 
         const popupContent = `
           <div style="min-width: 180px;">
-            <h6 class="fw-bold text-success mb-1">${wisata.name}</h6>
-            <p class="mb-1">${wisata.desc}</p>
-            <p class="mb-0 small text-muted">Rating: ${wisata.rating}</p>
-          </div>
+                  <h6 class="fw-bold text-success mb-1">${wisata.name}</h6>
+                  <p class="mb-1">${wisata.desc}</p>
+                  <p class="mb-1"><i class="bi bi-geo-alt-fill"></i> ${wisata.alamat}</p>
+                  <p class="mb-0 small text-muted">Rating: ${wisata.rating}</p>
+                </div>
         `;
 
         // Use category-based icon for destination marker
@@ -1320,8 +1362,17 @@
               document.getElementById('routeInfo').classList.remove('d-none');
             })
             .catch(error => {
-              console.error("Gagal ambil jalur:", error);
               document.getElementById('loading').classList.add('d-none');
+
+              // Show toast for error
+              Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'error',
+                title: 'Gagal memuat jalur, menggunakan alternatif',
+                showConfirmButton: false,
+                timer: 3000
+              });
 
               // If failed, use Leaflet Routing Machine as fallback
               useRoutingMachine(selectedStartCoords, selectedWisataCoords);
@@ -1332,9 +1383,9 @@
         }
 
         document.getElementById('touristInfo').innerHTML = `
-    <h6 class="fw-bold mb-1 text-success">${wisata.name}</h6>
-    <p class="mb-0 small">${wisata.desc}</p>
-  `;
+        <h6 class="fw-bold mb-1 text-success">${wisata.name}</h6>
+        <p class="mb-0 small">${wisata.desc}</p>
+      `;
       }
 
       // Function to calculate duration based on distance and fixed speed (50 km/h)
@@ -1456,12 +1507,13 @@
           const icon = getIconByCategory(point.category);
 
           const popupContent = `
-            <div style="min-width: 180px;">
-              <h6 class="fw-bold text-success mb-1">${point.name}</h6>
-              <p class="mb-1">${point.desc}</p>
-              <p class="mb-0 small text-muted">Rating: ${point.rating}</p>
-            </div>
-          `;
+                <div style="min-width: 180px;">
+                  <h6 class="fw-bold text-success mb-1">${point.name}</h6>
+                  <p class="mb-1">${point.desc}</p>
+                  <p class="mb-1"><i class="bi bi-geo-alt-fill"></i> ${point.alamat}</p>
+                  <p class="mb-0 small text-muted">Rating: ${point.rating}</p>
+                </div>
+              `;
 
           const marker = L.marker(latLng, {
               icon: icon
@@ -1475,10 +1527,11 @@
               } else {
                 document.getElementById('touristInfo').innerHTML = `
           <div style="min-width: 180px;">
-            <h6 class="fw-bold text-success mb-1">${point.name}</h6>
-            <p class="mb-1">${point.desc}</p>
-            <p class="mb-0 small text-muted">Rating: ${point.rating}</p>
-          </div>
+                  <h6 class="fw-bold text-success mb-1">${point.name}</h6>
+                  <p class="mb-1">${point.desc}</p>
+                  <p class="mb-1"><i class="bi bi-geo-alt-fill"></i> ${point.alamat}</p>
+                  <p class="mb-0 small text-muted">Rating: ${point.rating}</p>
+                </div>
         `;
               }
             });

@@ -57,7 +57,8 @@
               <i class="fas fa-map-marked-alt"></i>
             </div>
             <h4>Peta Interaktif</h4>
-            <p class="text-muted">Jelajahi peta interaktif dengan tampilan yang menarik dan mudah digunakan</p>
+            <p class="text-muted">Menampilkan peta Kota Medan dengan marker lokasi wisata yang dapat diklik untuk melihat
+              detailnya</p>
           </div>
         </div>
         <div class="col-md-4">
@@ -66,7 +67,8 @@
               <i class="fas fa-route"></i>
             </div>
             <h4>Rekomendasi Rute</h4>
-            <p class="text-muted">Dapatkan rekomendasi rute terbaik untuk mengunjungi destinasi wisata favorit</p>
+            <p class="text-muted">Memberikan rute perjalanan dari lokasi yg ditentukan oleh pengguna menuju lokasi wisata
+              yang dipilih.</p>
           </div>
         </div>
         <div class="col-md-4">
@@ -75,16 +77,18 @@
               <i class="fas fa-info-circle"></i>
             </div>
             <h4>Info Lengkap</h4>
-            <p class="text-muted">Akses informasi tentang destinasi, harga tiket, dan fasilitas</p>
+            <p class="text-muted">Menyajikan detail tempat wisata seperti nama, kategori, deskripsi, dan alamat.
+            </p>
           </div>
         </div>
         <div class="col-md-6">
           <div class="feature-card h-100">
             <div class="feature-icon">
-              <i class="fas fa-star"></i>
+              <i class="fas fa-search"></i>
             </div>
-            <h4>Rating</h4>
-            <p class="text-muted">Lihat rating terkait destinasi wisata untuk membantu perencanaan</p>
+            <h4>Filter Pencarian</h4>
+            <p class="text-muted">Memungkinkan pengguna memfilter tempat wisata berdasarkan jenisnya, seperti alam,
+              budaya, atau kuliner.</p>
           </div>
         </div>
         <div class="col-md-6">
@@ -189,8 +193,9 @@
     <div class="container">
       <div class="text-center mb-5">
         <h6 class="text-primary fw-bold">TIM KAMI</h6>
-        <h2 class="fw-bold">Otak di Balik GIS Wisata Medan</h2>
-        <p class="text-muted">Kenali tim yang berdedikasi dalam mengembangkan sistem informasi geografis wisata Medan
+        <h2 class="fw-bold">Otak di Balik ExploreMedan</h2>
+        <p class="text-muted">Kenali tim yang berdedikasi dalam mengembangkan sistem informasi geografis wisata kota
+          Medan
         </p>
       </div>
       <div class="row g-4">
@@ -198,7 +203,7 @@
           <div class="col-lg-4 col-md-6">
             <div class="card text-center h-100">
               <div class="card-body">
-                <img src="{{ asset('images/' . $team->photo) }}" alt="{{ $team->name }}"
+                <img src="{{ asset('assets/img/member/' . $team->photo) }}" alt="{{ $team->name }}"
                   class="team-img mb-4 rounded-circle" width="200" height="200">
                 <h5>{{ $team->name }}</h5>
                 <p class="text-primary mb-3">{{ $team->nim }}</p>
