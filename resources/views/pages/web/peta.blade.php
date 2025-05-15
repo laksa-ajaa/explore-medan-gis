@@ -1341,24 +1341,24 @@
               // Hide loading indicator
               document.getElementById('loading').classList.add('d-none');
 
-              // Calculate duration based on the fixed speed (50 km/h)
-              let distance = data.distance || 0; // Distance in meters
+              // Calculate duration based on the fixed speed (40 km/h)
+              let distanceKm = data.panjang_km || 0;
 
-              // If we have distance data, use it; otherwise, use the straight-line distance
-              if (!distance) {
-                // Calculate straight line distance using Haversine formula
+              // Jika tidak ada data dari backend, pakai haversine
+              if (!distanceKm) {
                 const startLatLng = L.latLng(selectedStartCoords[0], selectedStartCoords[1]);
                 const endLatLng = L.latLng(selectedWisataCoords[0], selectedWisataCoords[1]);
-                distance = startLatLng.distanceTo(endLatLng);
+                const distance = startLatLng.distanceTo(endLatLng); // dalam meter
+                distanceKm = distance / 1000;
               }
 
-              // Calculate duration using our fixed speed formula
-              const duration = calculateDuration(distance);
+              // Hitung durasi (waktu tempuh) berdasarkan kecepatan tetap
+              const duration = calculateDuration(distanceKm * 1000); // masukkan meter
 
-              // Display route information
-              document.getElementById('routeDistance').textContent = `Jarak: ${(distance / 1000).toFixed(2)} km`;
+              // Tampilkan info jalur
+              document.getElementById('routeDistance').textContent = `Jarak: ${distanceKm.toFixed(2)} km`;
               document.getElementById('routeDuration').textContent =
-                `Waktu Tempuh: ${formatDuration(duration)} (50 km/jam)`;
+                `Waktu Tempuh: ${formatDuration(duration)} (40 km/jam)`;
               document.getElementById('routeInfo').classList.remove('d-none');
             })
             .catch(error => {
@@ -1388,9 +1388,9 @@
       `;
       }
 
-      // Function to calculate duration based on distance and fixed speed (50 km/h)
+      // Function to calculate duration based on distance and fixed speed (40 km/h)
       function calculateDuration(distanceInMeters) {
-        const speedKmPerHour = 50; // Fixed speed: 50 km/h
+        const speedKmPerHour = 40; // Fixed speed: 40 km/h
         const speedMeterPerSecond = speedKmPerHour * 1000 / 3600; // Convert to m/s
         const durationInSeconds = distanceInMeters / speedMeterPerSecond;
         return durationInSeconds;
@@ -1455,7 +1455,7 @@
           // Display route info
           document.getElementById('routeDistance').textContent = `Jarak: ${(distance / 1000).toFixed(2)} km`;
           document.getElementById('routeDuration').textContent =
-            `Waktu Tempuh: ${formatDuration(duration)} (50 km/jam)`;
+            `Waktu Tempuh: ${formatDuration(duration)} (40 km/jam)`;
           document.getElementById('routeInfo').classList.remove('d-none');
 
           // Hide loading indicator

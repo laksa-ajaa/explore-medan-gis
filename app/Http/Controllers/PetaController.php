@@ -30,7 +30,13 @@ class PetaController extends Controller
 
     public function getJalurByStartAndWisata($start_id, $wisata_id)
     {
-        $jalur = LineJalur::select('id', 'start_id', 'wisata_id', DB::raw('ST_AsGeoJSON(geom) as geom'))
+        $jalur = LineJalur::select(
+            'id',
+            'start_id',
+            'wisata_id',
+            DB::raw('ST_AsGeoJSON(geom) as geom'),
+            DB::raw('ST_Length(ST_Transform(geom, 3857)) / 1000 as panjang_km')
+        )
             ->where('start_id', $start_id)
             ->where('wisata_id', $wisata_id)
             ->first();
@@ -40,7 +46,8 @@ class PetaController extends Controller
         }
 
         return response()->json([
-            'geom' => json_decode($jalur->geom)
+            'geom' => json_decode($jalur->geom),
+            'panjang_km' => $jalur->panjang_km
         ]);
     }
 }
